@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import * as orderService from '../services/order.js';
 import * as customerService from '../services/customer.js';
-import * as upiService from '../services/upi.js';
 import * as notify from '../services/notify.js';
 
 const itemSchema = z.object({
@@ -55,32 +54,25 @@ export async function removeItem(req, res, next) {
 }
 
 /**
- * Place the order: CART → AWAITING_PAYMENT, return UPI URI for the QR.
- * Also fires the admin DM as a side effect (best-effort).
+ * Place an order. If customer details are missing, prompts the user to add them;
+ * otherwise moves the cart to AWAITING_PAYMENT and notifies the user and admin.
  */
 export async function placeOrder(req, res, next) {
   try {
     const id = Number(req.params.id);
-
-    // Customer details must exist before placing.
     const customer = await customerService.findById(req.customer.id);
+
     if (!customerService.hasCompleteDetails(customer)) {
-      return res.status(409).json({ error: 'details_required' });
+      notify.notifyCustomerDetailsRequired(customer.telegramUserId).catch(() => {});
+      return res.json({ status: 'details_required', orderId: id });
     }
 
     const order = await orderService.placeOrder(id, req.customer.id);
-    const upiUri = upiService.buildUri({ orderId: order.id, amountPaise: order.total });
-    const ref = upiService.buildRef(order.id);
 
-    // Fire-and-forget admin notification
+    notify.notifyCustomerUpiQr(customer.telegramUserId, order).catch(() => {});
     notify.notifyAdminNewOrder(order).catch(() => {});
 
-    res.json({
-      order,
-      upiUri,
-      ref,
-      amountPaise: order.total,
-    });
+    res.json({ status: 'placed', orderId: order.id });
   } catch (err) {
     next(err);
   }

@@ -1,8 +1,8 @@
-import * as orderService from '../services/order.js';
-import * as upiService from '../services/upi.js';
-import { logger } from '../logger.js';
+import * as orderService from "../services/order.js";
+import * as upiService from "../services/upi.js";
+import { logger } from "../logger.js";
 
-const fmtINR = (paise) => `₹${(paise / 100).toLocaleString('en-IN')}`;
+const fmtINR = (paise) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
 /**
  * Generate the UPI QR for an order and send it to the user.
@@ -10,11 +10,14 @@ const fmtINR = (paise) => `₹${(paise / 100).toLocaleString('en-IN')}`;
 export async function sendUpiQr(ctx, orderId) {
   const order = await orderService.getOrder(orderId);
   if (!order) {
-    await ctx.reply("Couldn't find that order. Please try again.");
+    await ctx.reply("We couldn't find that order. Please start a new one.");
     return;
   }
 
-  const uri = upiService.buildUri({ orderId: order.id, amountPaise: order.total });
+  const uri = upiService.buildUri({
+    orderId: order.id,
+    amountPaise: order.total,
+  });
   const ref = upiService.buildRef(order.id);
   const qrPng = await upiService.generateQrPng(uri);
 
@@ -22,16 +25,14 @@ export async function sendUpiQr(ctx, orderId) {
   await ctx.replyWithPhoto(
     { source: qrPng },
     {
-      caption: `Scan with any UPI app to pay.\nAmount and reference (${ref}) are pre-filled.`,
-    },
+      caption: `Scan this QR with any UPI app to pay ${fmtINR(
+        order.total
+      )}.\nReference: ${ref}`,
+    }
   );
-  await ctx.reply('Once you have paid, please wait — we will confirm shortly.');
+  await ctx.reply(
+    "Once you've paid, please sit tight — we'll confirm your order shortly."
+  );
 
-  logger.info({ orderId, total: order.total }, 'Sent UPI QR to customer');
-}
-
-export default function registerPayment(_bot) {
-  // No bot.action handlers here — payment.sendUpiQr is invoked from
-  // confirmDetails.js (after the user taps "Confirm and pay") and
-  // miniappData.js (if the Mini App calls it directly).
+  logger.info({ orderId, total: order.total }, "Sent UPI QR to customer");
 }

@@ -1,338 +1,408 @@
 (function () {
+  "use strict";
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) tg.ready();
 
-  const fmtINR = (paise) => '₹' + (paise / 100).toLocaleString('en-IN');
-
-  // ─── State ───────────────────────────────────────────────────────────────
   const state = {
+    boot: "loading", // 'loading' | 'ready' | 'error'
+    bootError: null,
     customer: null,
     menu: [],
-    cart: { id: null, items: [], subtotal: 0, deliveryFee: 0, total: 0 },
-    view: 'menu', // 'menu' | 'cart'
-    search: '',
-    pendingSync: new Map(), // itemId -> latest qty (debounced)
-    syncTimer: null,
+    cartOrderId: null,
+    cartItems: [], // [{ itemId, quantity, priceAtTime }]
+    view: "menu", // 'menu' | 'cart'
+    search: "",
+    openCategories: new Set(),
+    placing: false,
+    deliveryFeePaise: 0,
+    sync: {
+      pending: new Map(), // itemId -> latest qty
+      timer: null,
+      inFlight: 0,
+    },
   };
 
-  // ─── DOM refs ────────────────────────────────────────────────────────────
-  const el = {
-    loading: document.getElementById('loading'),
-    app: document.getElementById('app'),
-    error: document.getElementById('error'),
-    backBtn: document.getElementById('back-btn'),
-    title: document.getElementById('hd-title'),
-    viewMenu: document.getElementById('view-menu'),
-    viewCart: document.getElementById('view-cart'),
-    categories: document.getElementById('categories'),
-    cartList: document.getElementById('cart-list'),
-    cartEmpty: document.getElementById('cart-empty'),
-    cartTotals: document.getElementById('cart-totals'),
-    tSub: document.getElementById('t-sub'),
-    tDel: document.getElementById('t-del'),
-    tTot: document.getElementById('t-tot'),
-    cta: document.getElementById('cta'),
-    search: document.getElementById('search'),
-  };
+  const fmt = (paise) => "₹" + (paise / 100).toLocaleString("en-IN");
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────
-  const cartCount = () => state.cart.items.reduce((s, it) => s + it.quantity, 0);
-  const qtyForItem = (itemId) => {
-    const found = state.cart.items.find((i) => i.itemId === itemId);
-    return found ? found.quantity : 0;
-  };
+  const qtyFor = (itemId) =>
+    state.cartItems.find((x) => x.itemId === itemId)?.quantity || 0;
+  const cartCount = () => state.cartItems.reduce((s, x) => s + x.quantity, 0);
+  const subtotal = () =>
+    state.cartItems.reduce((s, x) => s + x.quantity * x.priceAtTime, 0);
+  const deliveryFee = () =>
+    state.cartItems.length > 0 ? state.deliveryFeePaise : 0;
+  const total = () => subtotal() + deliveryFee();
 
-  function showError(msg) {
-    el.loading.classList.add('hidden');
-    el.app.classList.add('hidden');
-    el.error.textContent = msg;
-    el.error.classList.remove('hidden');
+  let itemIndex = new Map();
+  const findItem = (id) => itemIndex.get(id) || null;
+  function rebuildItemIndex() {
+    itemIndex = new Map();
+    for (const cat of state.menu)
+      for (const it of cat.items) itemIndex.set(it.id, it);
   }
 
-  // Debounced sync of quantity changes to the server.
-  function scheduleSync(itemId, qty) {
-    state.pendingSync.set(itemId, qty);
-    if (state.syncTimer) clearTimeout(state.syncTimer);
-    state.syncTimer = setTimeout(flushSync, 300);
-  }
-  async function flushSync() {
-    const updates = [...state.pendingSync.entries()];
-    state.pendingSync.clear();
-    state.syncTimer = null;
-    for (const [itemId, qty] of updates) {
-      try {
-        const updated = await api.setQty(state.cart.id, itemId, qty);
-        state.cart.items = updated.items;
-        state.cart.subtotal = updated.subtotal;
-        state.cart.deliveryFee = updated.deliveryFee;
-        state.cart.total = updated.total;
-        renderCta();
-        if (state.view === 'cart') renderCart();
-      } catch (err) {
-        console.error('sync failed', err);
-        if (tg) tg.HapticFeedback?.notificationOccurred?.('error');
-      }
-    }
-  }
-
-  // ─── Local cart mutations (optimistic) ───────────────────────────────────
-  function changeQty(itemId, delta, basePrice) {
-    const cur = qtyForItem(itemId);
-    const next = Math.max(0, cur + delta);
-    if (next === cur) return;
-
-    if (cur === 0 && next > 0) {
-      state.cart.items.push({ itemId, quantity: next, priceAtTime: basePrice });
-    } else if (next === 0) {
-      state.cart.items = state.cart.items.filter((i) => i.itemId !== itemId);
-    } else {
-      const it = state.cart.items.find((i) => i.itemId === itemId);
-      if (it) it.quantity = next;
-    }
-
-    // Recompute totals locally for snappy UI; server is source of truth on sync.
-    const subtotal = state.cart.items.reduce((s, it) => s + it.quantity * it.priceAtTime, 0);
-    state.cart.subtotal = subtotal;
-    state.cart.deliveryFee = state.cart.items.length > 0 ? 4000 : 0;
-    state.cart.total = subtotal + state.cart.deliveryFee;
-
-    scheduleSync(itemId, next);
-    if (tg) tg.HapticFeedback?.impactOccurred?.('light');
-  }
-
-  // ─── Rendering ───────────────────────────────────────────────────────────
   function matchesSearch(item) {
-    if (!state.search) return true;
-    return item.name.toLowerCase().includes(state.search.toLowerCase());
+    const q = state.search.trim().toLowerCase();
+    if (!q) return true;
+    return item.name.toLowerCase().includes(q);
   }
 
-  function renderMenu() {
-    el.categories.innerHTML = '';
-    const q = state.search.trim();
+  function setView(v) {
+    state.view = v;
+    render();
+  }
+  function setSearch(text) {
+    state.search = text;
+    render();
+  }
+  function toggleCategory(n) {
+    if (state.openCategories.has(n)) state.openCategories.delete(n);
+    else state.openCategories.add(n);
+    render();
+  }
 
-    state.menu.forEach((cat, idx) => {
-      const matchedItems = cat.items.filter(matchesSearch);
-      if (q && matchedItems.length === 0) return; // hide categories with no hits
+  function setQty(itemId, qty) {
+    qty = Math.max(0, Math.min(99, Math.floor(qty)));
+    const item = findItem(itemId);
+    if (!item) return;
 
-      const wrap = document.createElement('div');
-      wrap.className = 'cat';
-      // Open first category by default, or all categories during a search
-      wrap.dataset.open = q ? 'true' : (idx === 0 ? 'true' : 'false');
+    const idx = state.cartItems.findIndex((x) => x.itemId === itemId);
+    if (qty === 0) {
+      if (idx !== -1) state.cartItems.splice(idx, 1);
+    } else if (idx === -1) {
+      state.cartItems.push({ itemId, quantity: qty, priceAtTime: item.price });
+    } else {
+      state.cartItems[idx] = { ...state.cartItems[idx], quantity: qty };
+    }
 
-      const hd = document.createElement('div');
-      hd.className = 'cat-hd';
+    scheduleSync(itemId, qty);
+    if (tg) tg.HapticFeedback?.impactOccurred?.("light");
+    render();
+  }
+  const incQty = (id) => setQty(id, qtyFor(id) + 1);
+  const decQty = (id) => setQty(id, qtyFor(id) - 1);
+
+  // Fire-and-forget: never replay server responses into local state — a stale
+  // response could clobber a newer tap.
+  function scheduleSync(itemId, qty) {
+    state.sync.pending.set(itemId, qty);
+    if (state.sync.timer) clearTimeout(state.sync.timer);
+    state.sync.timer = setTimeout(flushSync, 300);
+  }
+
+  async function flushSync() {
+    state.sync.timer = null;
+    const updates = [...state.sync.pending.entries()];
+    state.sync.pending.clear();
+    if (updates.length === 0) return;
+
+    state.sync.inFlight += updates.length;
+    try {
+      await Promise.all(
+        updates.map(([itemId, qty]) =>
+          api.setQty(state.cartOrderId, itemId, qty).catch((err) => {
+            console.error("Sync failed", { itemId, qty, err });
+            if (tg) tg.HapticFeedback?.notificationOccurred?.("error");
+          })
+        )
+      );
+    } finally {
+      state.sync.inFlight = Math.max(0, state.sync.inFlight - updates.length);
+    }
+  }
+
+  async function flushSyncAndWait() {
+    if (state.sync.timer) clearTimeout(state.sync.timer);
+    state.sync.timer = null;
+    if (state.sync.pending.size > 0) await flushSync();
+    while (state.sync.inFlight > 0) await new Promise((r) => setTimeout(r, 25));
+  }
+
+  async function placeOrder() {
+    if (state.placing) return;
+    state.placing = true;
+    render();
+
+    try {
+      await flushSyncAndWait();
+      const result = await api.placeOrder(state.cartOrderId);
+      console.log("Place order:", result);
+      if (tg) {
+        tg.HapticFeedback?.notificationOccurred?.("success");
+        tg.close();
+      } else {
+        alert(
+          "Order processed (" + result.status + "). Check your Telegram chat."
+        );
+      }
+    } catch (err) {
+      console.error("Place order failed:", err);
+      state.placing = false;
+      render();
+      if (tg) tg.HapticFeedback?.notificationOccurred?.("error");
+      alert("Could not place order. " + (err.message || ""));
+    }
+  }
+
+  const el = {
+    loading: document.getElementById("loading"),
+    app: document.getElementById("app"),
+    error: document.getElementById("error"),
+    backBtn: document.getElementById("back-btn"),
+    title: document.getElementById("hd-title"),
+    viewMenu: document.getElementById("view-menu"),
+    viewCart: document.getElementById("view-cart"),
+    categories: document.getElementById("categories"),
+    cartList: document.getElementById("cart-list"),
+    cartEmpty: document.getElementById("cart-empty"),
+    cartTotals: document.getElementById("cart-totals"),
+    tSub: document.getElementById("t-sub"),
+    tDel: document.getElementById("t-del"),
+    tTot: document.getElementById("t-tot"),
+    cta: document.getElementById("cta"),
+    search: document.getElementById("search"),
+  };
+
+  function render() {
+    if (state.boot === "loading") {
+      show(el.loading);
+      hide(el.app);
+      hide(el.error);
+      return;
+    }
+    if (state.boot === "error") {
+      hide(el.loading);
+      hide(el.app);
+      el.error.textContent =
+        "Failed to load. " + (state.bootError || "Please try again.");
+      show(el.error);
+      return;
+    }
+
+    hide(el.loading);
+    hide(el.error);
+    show(el.app);
+
+    if (state.view === "menu") {
+      show(el.viewMenu);
+      hide(el.viewCart);
+      el.title.textContent = "Menu — Spice Garden";
+      hide(el.backBtn);
+      renderMenuList();
+    } else {
+      hide(el.viewMenu);
+      show(el.viewCart);
+      el.title.textContent = "Your cart  ·  " + cartCount() + " items";
+      show(el.backBtn);
+      renderCartList();
+    }
+    renderCta();
+  }
+
+  const show = (e) => e.classList.remove("hidden");
+  const hide = (e) => e.classList.add("hidden");
+
+  function renderMenuList() {
+    if (el.search.value !== state.search) el.search.value = state.search;
+    const scrollTop = el.viewMenu.scrollTop;
+
+    el.categories.innerHTML = "";
+    const isSearching = !!state.search.trim();
+
+    let anyMatched = false;
+    state.menu.forEach((cat) => {
+      const matched = cat.items.filter(matchesSearch);
+      if (isSearching && matched.length === 0) return;
+      anyMatched = true;
+
+      const wrap = document.createElement("div");
+      wrap.className = "cat";
+      wrap.dataset.open =
+        isSearching || state.openCategories.has(cat.name) ? "true" : "false";
+
+      const hd = document.createElement("div");
+      hd.className = "cat-hd";
       hd.innerHTML =
         '<span class="chev">›</span>' +
         '<span class="cat-name"></span>' +
         '<span class="cat-count"></span>';
-      hd.querySelector('.cat-name').textContent = cat.name;
-      hd.querySelector('.cat-count').textContent = (q ? matchedItems.length : cat.count) + ' items';
-      hd.addEventListener('click', () => {
-        wrap.dataset.open = wrap.dataset.open === 'true' ? 'false' : 'true';
-      });
+      hd.querySelector(".cat-name").textContent = cat.name;
+      hd.querySelector(".cat-count").textContent =
+        (isSearching ? matched.length : cat.count) + " items";
+      hd.addEventListener("click", () => toggleCategory(cat.name));
       wrap.appendChild(hd);
 
-      const items = document.createElement('div');
-      items.className = 'cat-items';
-      matchedItems.forEach((it) => items.appendChild(renderMenuItem(it)));
+      const items = document.createElement("div");
+      items.className = "cat-items";
+      matched.forEach((it) => items.appendChild(renderMenuItem(it)));
       wrap.appendChild(items);
 
       el.categories.appendChild(wrap);
     });
 
-    if (q && el.categories.children.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.textContent = 'No items match "' + q + '".';
+    if (isSearching && !anyMatched) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = 'No items match "' + state.search + '".';
       el.categories.appendChild(empty);
     }
+
+    el.viewMenu.scrollTop = scrollTop;
   }
 
   function renderMenuItem(it) {
-    const row = document.createElement('div');
-    row.className = 'mi';
+    const row = document.createElement("div");
+    row.className = "mi";
 
-    const thumb = document.createElement('img');
-    thumb.className = 'thumb';
-    thumb.src = it.imageUrl || 'https://placehold.co/100x100/e5e7eb/6b7280?text=Item';
-    thumb.alt = '';
-    thumb.loading = 'lazy';
+    const thumb = document.createElement("img");
+    thumb.className = "thumb";
+    thumb.src =
+      it.imageUrl || "https://placehold.co/100x100/e5e7eb/6b7280?text=Item";
+    thumb.alt = "";
+    thumb.loading = "lazy";
     row.appendChild(thumb);
 
-    const info = document.createElement('div');
-    info.className = 'info';
-    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = it.name;
-    const pr = document.createElement('div'); pr.className = 'pr'; pr.textContent = fmtINR(it.price);
-    info.appendChild(nm); info.appendChild(pr);
+    const info = document.createElement("div");
+    info.className = "info";
+    const nm = document.createElement("div");
+    nm.className = "nm";
+    nm.textContent = it.name;
+    const pr = document.createElement("div");
+    pr.className = "pr";
+    pr.textContent = fmt(it.price);
+    info.appendChild(nm);
+    info.appendChild(pr);
     row.appendChild(info);
 
-    const qty = qtyForItem(it.id);
-    if (qty === 0) {
-      const add = document.createElement('button');
-      add.className = 'add';
-      add.textContent = 'Add';
-      add.addEventListener('click', () => {
-        changeQty(it.id, 1, it.price);
-        renderMenu();
-        renderCta();
-      });
+    if (qtyFor(it.id) === 0) {
+      const add = document.createElement("button");
+      add.className = "add";
+      add.textContent = "Add";
+      add.addEventListener("click", () => incQty(it.id));
       row.appendChild(add);
     } else {
-      row.appendChild(buildQtyStepper(it, () => {
-        renderMenu();
-        renderCta();
-      }));
+      row.appendChild(buildStepper(it.id));
     }
     return row;
   }
 
-  function buildQtyStepper(item, onChange) {
-    const q = document.createElement('div');
-    q.className = 'qty';
-    const minus = document.createElement('button'); minus.textContent = '−';
-    const num = document.createElement('span'); num.className = 'num'; num.textContent = qtyForItem(item.id);
-    const plus = document.createElement('button'); plus.textContent = '+';
-    q.appendChild(minus); q.appendChild(num); q.appendChild(plus);
-    minus.addEventListener('click', () => { changeQty(item.id, -1, item.price); onChange(); });
-    plus.addEventListener('click',  () => { changeQty(item.id,  1, item.price); onChange(); });
+  function buildStepper(itemId) {
+    const q = document.createElement("div");
+    q.className = "qty";
+    const minus = document.createElement("button");
+    minus.textContent = "−";
+    const num = document.createElement("span");
+    num.className = "num";
+    num.textContent = qtyFor(itemId);
+    const plus = document.createElement("button");
+    plus.textContent = "+";
+    q.appendChild(minus);
+    q.appendChild(num);
+    q.appendChild(plus);
+    minus.addEventListener("click", () => decQty(itemId));
+    plus.addEventListener("click", () => incQty(itemId));
     return q;
   }
 
-  function renderCart() {
-    el.cartList.innerHTML = '';
-    if (state.cart.items.length === 0) {
-      el.cartEmpty.classList.remove('hidden');
-      el.cartTotals.classList.add('hidden');
+  function renderCartList() {
+    el.cartList.innerHTML = "";
+    if (state.cartItems.length === 0) {
+      show(el.cartEmpty);
+      hide(el.cartTotals);
       return;
     }
-    el.cartEmpty.classList.add('hidden');
-    el.cartTotals.classList.remove('hidden');
+    hide(el.cartEmpty);
+    show(el.cartTotals);
 
-    // Build a lookup of menu items for thumbnail/name.
-    const byId = new Map();
-    for (const cat of state.menu) for (const it of cat.items) byId.set(it.id, it);
+    state.cartItems.forEach((line) => {
+      const item = findItem(line.itemId) || {
+        name: "Item #" + line.itemId,
+        imageUrl: "",
+        price: line.priceAtTime,
+      };
 
-    state.cart.items.forEach((line) => {
-      const item = byId.get(line.itemId) || { name: 'Item #' + line.itemId, imageUrl: '', price: line.priceAtTime };
-      const row = document.createElement('div');
-      row.className = 'cart-row';
+      const row = document.createElement("div");
+      row.className = "cart-row";
 
-      const thumb = document.createElement('img');
-      thumb.className = 'thumb';
-      thumb.src = item.imageUrl || 'https://placehold.co/100x100/e5e7eb/6b7280?text=Item';
-      thumb.alt = '';
+      const thumb = document.createElement("img");
+      thumb.className = "thumb";
+      thumb.src =
+        item.imageUrl || "https://placehold.co/100x100/e5e7eb/6b7280?text=Item";
+      thumb.alt = "";
       row.appendChild(thumb);
 
-      const info = document.createElement('div');
-      info.className = 'info';
-      info.style.flex = '1'; info.style.minWidth = '0';
-      info.innerHTML = '<div class="nm"></div><div class="pr"></div>';
-      info.querySelector('.nm').textContent = item.name;
-      info.querySelector('.nm').style.fontSize = '13px';
-      info.querySelector('.nm').style.fontWeight = '500';
-      info.querySelector('.pr').textContent =
-        fmtINR(line.priceAtTime) + ' each  ·  ' + fmtINR(line.priceAtTime * line.quantity);
+      const info = document.createElement("div");
+      info.className = "info";
+      const nm = document.createElement("div");
+      nm.className = "nm";
+      nm.textContent = item.name;
+      const pr = document.createElement("div");
+      pr.className = "pr";
+      pr.textContent =
+        fmt(line.priceAtTime) +
+        " each  ·  " +
+        fmt(line.priceAtTime * line.quantity);
+      info.appendChild(nm);
+      info.appendChild(pr);
       row.appendChild(info);
 
-      row.appendChild(buildQtyStepper({ id: line.itemId, price: line.priceAtTime }, () => {
-        renderCart();
-        renderCta();
-      }));
-
+      row.appendChild(buildStepper(line.itemId));
       el.cartList.appendChild(row);
     });
 
-    el.tSub.textContent = fmtINR(state.cart.subtotal);
-    el.tDel.textContent = fmtINR(state.cart.deliveryFee);
-    el.tTot.textContent = fmtINR(state.cart.total);
+    el.tSub.textContent = fmt(subtotal());
+    el.tDel.textContent = fmt(deliveryFee());
+    el.tTot.textContent = fmt(total());
   }
 
   function renderCta() {
-    const count = cartCount();
-    if (state.view === 'menu') {
-      el.cta.textContent = 'View cart';
-      el.cta.disabled = count === 0;
+    if (state.placing) {
+      el.cta.disabled = true;
+      el.cta.textContent = "Placing order...";
+      return;
+    }
+    const c = cartCount();
+    if (state.view === "menu") {
+      el.cta.textContent = "View cart";
+      el.cta.disabled = c === 0;
     } else {
-      el.cta.textContent = count === 0 ? 'Cart is empty' : 'Place order  ·  ' + fmtINR(state.cart.total);
-      el.cta.disabled = count === 0;
+      el.cta.textContent =
+        c === 0 ? "Cart is empty" : "Place order  ·  " + fmt(total());
+      el.cta.disabled = c === 0;
     }
   }
 
-  function setView(view) {
-    state.view = view;
-    if (view === 'menu') {
-      el.viewMenu.classList.remove('hidden');
-      el.viewCart.classList.add('hidden');
-      el.title.textContent = 'Menu — Spice Garden';
-      el.backBtn.classList.add('hidden');
-    } else {
-      el.viewMenu.classList.add('hidden');
-      el.viewCart.classList.remove('hidden');
-      el.title.textContent = 'Your cart  ·  ' + cartCount() + ' items';
-      el.backBtn.classList.remove('hidden');
-      renderCart();
-    }
-    renderCta();
-  }
-
-  // ─── Actions ─────────────────────────────────────────────────────────────
-  async function placeOrder() {
-    el.cta.disabled = true;
-    el.cta.textContent = 'Placing order...';
-
-    // Make sure pending sync changes have flushed.
-    if (state.syncTimer) {
-      clearTimeout(state.syncTimer);
-      await flushSync();
-    }
-
-    try {
-      // Tell the bot the user wants to place this order. The bot will
-      // run the details confirm flow; if details are missing it'll start
-      // the wizard. The actual status flip to AWAITING_PAYMENT happens
-      // when the user taps "Confirm and pay" in chat.
-      const payload = JSON.stringify({ intent: 'place_order', orderId: state.cart.id });
-      if (tg) {
-        tg.sendData(payload);
-      } else {
-        alert('Telegram WebApp unavailable. Payload: ' + payload);
-      }
-    } catch (err) {
-      console.error(err);
-      el.cta.disabled = false;
-      el.cta.textContent = 'Place order';
-    }
-  }
-
-  // ─── Boot ────────────────────────────────────────────────────────────────
   async function boot() {
     try {
       const data = await api.init();
       state.customer = data.customer;
       state.menu = data.menu;
-      state.cart = data.cart;
-      el.loading.classList.add('hidden');
-      el.app.classList.remove('hidden');
-
-      renderMenu();
-      setView('menu');
-
-      el.backBtn.addEventListener('click', () => setView('menu'));
-      el.cta.addEventListener('click', () => {
-        if (state.view === 'menu') setView('cart');
-        else placeOrder();
-      });
-      el.search.addEventListener('input', (e) => {
-        state.search = e.target.value;
-        renderMenu();
-      });
-
-      // Apply Telegram theme params (best-effort; CSS uses fallbacks too).
-      if (tg) tg.expand();
+      state.cartOrderId = data.cart.id;
+      state.cartItems = Array.isArray(data.cart.items) ? data.cart.items : [];
+      state.deliveryFeePaise = data.deliveryFeePaise ?? 0;
+      rebuildItemIndex();
+      if (state.menu.length > 0) state.openCategories.add(state.menu[0].name);
+      state.boot = "ready";
     } catch (err) {
-      console.error(err);
-      showError('Failed to load. ' + (err.message || 'Please try again.'));
+      console.error("Boot failed:", err);
+      state.boot = "error";
+      state.bootError = err.message;
     }
+    render();
+
+    el.backBtn.addEventListener("click", () => setView("menu"));
+    el.cta.addEventListener("click", () => {
+      if (state.view === "menu") setView("cart");
+      else placeOrder();
+    });
+    el.search.addEventListener("input", (e) => setSearch(e.target.value));
+
+    // Flush on tab close so the last tap isn't lost.
+    window.addEventListener("pagehide", () => {
+      flushSync();
+    });
+
+    if (tg) tg.expand();
   }
 
   boot();

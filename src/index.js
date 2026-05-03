@@ -14,6 +14,7 @@ import orderRouter from './router/order.js';
 import customerRouter from './router/customer.js';
 import miniappRouter from './router/miniapp.js';
 import adminRouter from './router/admin.js';
+import payRouter from './router/pay.js';
 
 import { errorHandler } from './middleware/error.js';
 
@@ -34,6 +35,9 @@ async function main() {
 
   // Health
   app.get('/health', (_req, res) => res.json({ ok: true }));
+
+  // Public UPI redirect — bot DM button points here, we 302 to upi://
+  app.use('/pay', payRouter);
 
   // API
   app.use('/api/menu', menuRouter);

@@ -1,6 +1,7 @@
 import * as menuService from './menu.js';
 import * as orderService from './order.js';
 import * as customerService from './customer.js';
+import { config } from '../config.js';
 
 /**
  * Bundled response for Mini App first paint.
@@ -30,5 +31,6 @@ export async function getInitData(telegramUserId) {
       deliveryFee: cart.deliveryFee,
       total: cart.total,
     },
+    deliveryFeePaise: config.DELIVERY_FEE_PAISE,
   };
 }

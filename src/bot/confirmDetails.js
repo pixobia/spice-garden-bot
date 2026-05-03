@@ -17,7 +17,7 @@ export async function sendDetailsConfirm(ctx, orderId) {
     ctx.session = ctx.session || {};
     ctx.session.pendingOrderId = orderId;
     await ctx.reply(
-      "Looks like this is your first order — we just need a few details. Let's start with your full name.",
+      "Welcome! Before your first order, we just need a few delivery details. Let's start with your full name.",
     );
     await ctx.scene.enter('details_wizard');
     return;
@@ -28,7 +28,7 @@ export async function sendDetailsConfirm(ctx, orderId) {
 
   await ctx.reply(
     [
-      'Almost done! Please confirm your delivery details:',
+      'Please confirm your delivery details:',
       '',
       `Name:     ${customer.name}`,
       `Phone:    ${customer.phone}`,
@@ -54,12 +54,26 @@ export default function registerConfirmDetails(bot) {
       await sendUpiQr(ctx, orderId);
     } catch (err) {
       logger.error({ err, orderId }, 'Failed to place order');
-      await ctx.reply(`Couldn't place the order: ${err.message}`);
+      await ctx.reply("Sorry, we couldn't place your order right now. Please try again in a moment.");
     }
   });
 
   bot.action('update_details', async (ctx) => {
     await ctx.answerCbQuery();
+    // Remember the user's current cart so the wizard can place it once details
+    // are filled in. There's at most one CART-status order per customer.
+    try {
+      const customer = await customerService.findByTelegramId(ctx.from.id);
+      if (customer) {
+        const cart = await orderService.getOrCreateCart(customer.id);
+        if (cart && Array.isArray(cart.items) && cart.items.length > 0) {
+          ctx.session = ctx.session || {};
+          ctx.session.pendingOrderId = cart.id;
+        }
+      }
+    } catch (err) {
+      logger.warn({ err }, 'Could not stash pending order before wizard');
+    }
     await ctx.scene.enter('details_wizard');
   });
 }

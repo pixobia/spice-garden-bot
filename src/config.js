@@ -1,30 +1,41 @@
-import 'dotenv/config';
-import { z } from 'zod';
+import "dotenv/config";
+import { z } from "zod";
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
 
   DATABASE_URL: z.string().url(),
 
-  BOT_TOKEN: z.string().min(1, 'BOT_TOKEN required — get one from @BotFather'),
-  BOT_USERNAME: z.string().optional().default(''),
+  BOT_TOKEN: z.string().min(1, "BOT_TOKEN required — get one from @BotFather"),
+  BOT_USERNAME: z.string().optional().default(""),
   PUBLIC_URL: z.string().url(),
 
-  ADMIN_CHAT_ID: z.coerce.number().int(),
+  ADMIN_CHAT_ID: z.coerce
+    .number()
+    .int()
+    .refine(
+      (n) => n !== 0,
+      "ADMIN_CHAT_ID required — DM @userinfobot to get your numeric Telegram id"
+    ),
   ADMIN_TOKEN: z.string().min(1),
+  ADMIN_MOBILE_NUMBER: z.string().min(1),
 
   MERCHANT_VPA: z.string().min(1),
   MERCHANT_NAME: z.string().min(1),
   DELIVERY_FEE_RUPEES: z.coerce.number().int().nonnegative().default(40),
 
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace"])
+    .default("info"),
 });
 
 const parsed = schema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('Invalid environment configuration:');
+  console.error("Invalid environment configuration:");
   console.error(parsed.error.flatten().fieldErrors);
   process.exit(1);
 }
@@ -33,15 +44,15 @@ export const config = {
   ...parsed.data,
   DELIVERY_FEE_PAISE: parsed.data.DELIVERY_FEE_RUPEES * 100,
   CATEGORY_ORDER: [
-    'Starters',
-    'Mains',
-    'Breads',
-    'Rice & biryani',
-    'Chinese',
-    'South Indian',
-    'Desserts',
-    'Beverages',
-    'Combos',
-    'Sides',
+    "Starters",
+    "Mains",
+    "Breads",
+    "Rice & biryani",
+    "Chinese",
+    "South Indian",
+    "Desserts",
+    "Beverages",
+    "Combos",
+    "Sides",
   ],
 };

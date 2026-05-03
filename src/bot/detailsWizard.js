@@ -1,20 +1,23 @@
-import { Scenes } from 'telegraf';
-import { Markup } from 'telegraf';
-import * as customerService from '../services/customer.js';
-import { sendDetailsConfirm } from './confirmDetails.js';
+import { Scenes } from "telegraf";
+import { Markup } from "telegraf";
+import * as customerService from "../services/customer.js";
+import * as orderService from "../services/order.js";
+import * as notify from "../services/notify.js";
+import { logger } from "../logger.js";
 
 const PHONE_RE = /^[+\d\s-]{6,20}$/;
 
 /**
  * Wizard: name → phone → address.
- * If ctx.session.pendingOrderId exists, we re-show the confirm screen at the end.
+ * If ctx.session.pendingOrderId exists when the wizard finishes, the order
+ * is placed straight away — UPI QR sent to the user, admin DM'd.
  */
 export const detailsWizard = new Scenes.WizardScene(
-  'details_wizard',
+  "details_wizard",
 
   // Step 1: ask name
   async (ctx) => {
-    await ctx.reply('What is your full name?');
+    await ctx.reply("What is your full name?");
     return ctx.wizard.next();
   },
 
@@ -22,11 +25,15 @@ export const detailsWizard = new Scenes.WizardScene(
   async (ctx) => {
     const name = ctx.message?.text?.trim();
     if (!name || name.length < 2 || name.length > 60) {
-      await ctx.reply('Please send a valid name (2–60 characters).');
+      await ctx.reply(
+        "Please share your full name (between 2 and 60 letters)."
+      );
       return;
     }
     ctx.wizard.state.name = name;
-    await ctx.reply('And your phone number? (Indian format, e.g. +91 98xxx xxxxx)');
+    await ctx.reply(
+      "Thanks! What is your phone number?\n\nFor example: +91 98xxx xxxxx"
+    );
     return ctx.wizard.next();
   },
 
@@ -34,11 +41,15 @@ export const detailsWizard = new Scenes.WizardScene(
   async (ctx) => {
     const phone = ctx.message?.text?.trim();
     if (!phone || !PHONE_RE.test(phone)) {
-      await ctx.reply('That phone number does not look right. Please send it again.');
+      await ctx.reply(
+        "That doesn't look like a valid phone number. Please send it again — for example, +91 98xxx xxxxx."
+      );
       return;
     }
     ctx.wizard.state.phone = phone;
-    await ctx.reply('Finally, your delivery address? (Building, street, area, city)');
+    await ctx.reply(
+      "Last step — your delivery address?\n\nPlease include flat/building, street, area, and city."
+    );
     return ctx.wizard.next();
   },
 
@@ -46,7 +57,9 @@ export const detailsWizard = new Scenes.WizardScene(
   async (ctx) => {
     const address = ctx.message?.text?.trim();
     if (!address || address.length < 5 || address.length > 300) {
-      await ctx.reply('Address looks too short — please include building, street and city.');
+      await ctx.reply(
+        "Your address looks too short. Please include flat/building, street, area, and city."
+      );
       return;
     }
     ctx.wizard.state.address = address;
@@ -58,17 +71,32 @@ export const detailsWizard = new Scenes.WizardScene(
       address,
     });
 
-    await ctx.reply(
-      'Thanks — saved.',
-      Markup.removeKeyboard(),
-    );
+    await ctx.reply("Thanks! Your details are saved.", Markup.removeKeyboard());
 
     const pendingOrderId = ctx.session?.pendingOrderId;
+    if (ctx.session) ctx.session.pendingOrderId = null;
     await ctx.scene.leave();
 
     if (pendingOrderId) {
-      ctx.session.pendingOrderId = null;
-      await sendDetailsConfirm(ctx, pendingOrderId);
+      // Place the order now that details exist.
+      try {
+        const order = await orderService.placeOrder(
+          pendingOrderId,
+          customer.id
+        );
+        await Promise.all([
+          notify.notifyCustomerUpiQr(customer.telegramUserId, order),
+          notify.notifyAdminNewOrder(order),
+        ]);
+      } catch (err) {
+        logger.error(
+          { err, pendingOrderId },
+          "Failed to place pending order after wizard"
+        );
+        await ctx.reply(
+          "Sorry, we couldn't place your order right now. Please try again in a moment."
+        );
+      }
     }
-  },
+  }
 );

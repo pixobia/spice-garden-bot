@@ -10,10 +10,9 @@ export default function registerStart(bot) {
     await customerService.findOrCreate(ctx.from.id);
 
     await ctx.reply(
-      'Welcome to Spice Garden!\n\nFresh home-style meals, made to order. What would you like to do?',
+      'Welcome to Spice Garden!\n\nFresh, home-style meals made to order. Browse the menu and place your order in a few taps.',
       Markup.inlineKeyboard([
-        [Markup.button.callback('View menu', 'view_menu')],
-        [Markup.button.webApp('Order now', miniappUrl())],
+        [Markup.button.webApp('View menu', miniappUrl())],
       ]),
     );
   });
