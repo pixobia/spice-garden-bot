@@ -54,8 +54,13 @@ export async function removeItem(req, res, next) {
 }
 
 /**
- * Place an order. If customer details are missing, prompts the user to add them;
- * otherwise moves the cart to AWAITING_PAYMENT and notifies the user and admin.
+ * Place an order. The cart stays in CART until the user explicitly confirms
+ * — we don't flip the status here.
+ *
+ *   - No saved details: DM "Add my details" → wizard → wizard places the order.
+ *   - Has saved details: DM their saved details with [Confirm and pay] /
+ *     [Update details]. The bot's confirm_pay handler does the actual placing
+ *     (and sends the UPI QR + admin DM) when the user taps Confirm.
  */
 export async function placeOrder(req, res, next) {
   try {
@@ -67,12 +72,8 @@ export async function placeOrder(req, res, next) {
       return res.json({ status: 'details_required', orderId: id });
     }
 
-    const order = await orderService.placeOrder(id, req.customer.id);
-
-    notify.notifyCustomerUpiQr(customer.telegramUserId, order).catch(() => {});
-    notify.notifyAdminNewOrder(order).catch(() => {});
-
-    res.json({ status: 'placed', orderId: order.id });
+    notify.notifyCustomerConfirmDetails(customer, id).catch(() => {});
+    res.json({ status: 'awaiting_confirmation', orderId: id });
   } catch (err) {
     next(err);
   }

@@ -23,9 +23,14 @@ export async function findOrCreate(telegramUserId) {
   });
 }
 
-export async function updateDetails(id, { name, phone, address }) {
-  return db.customer.update({
-    where: { id },
-    data: { name, phone, address },
-  });
+/**
+ * Partial update: only fields explicitly present in `fields` are written.
+ * Pass any subset of { name, phone, address }.
+ */
+export async function updateDetails(id, fields) {
+  const data = {};
+  if (fields.name !== undefined) data.name = fields.name;
+  if (fields.phone !== undefined) data.phone = fields.phone;
+  if (fields.address !== undefined) data.address = fields.address;
+  return db.customer.update({ where: { id }, data });
 }

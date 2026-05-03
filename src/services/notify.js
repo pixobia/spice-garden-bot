@@ -135,6 +135,37 @@ export async function notifyCustomerUpiQr(telegramUserId, order) {
 }
 
 /**
+ * Returning customer placed an order — show their saved details so they
+ * can confirm or update before paying. The bot's confirm_pay / update_details
+ * callbacks (registered in bot/confirmDetails.js) handle the taps.
+ */
+export async function notifyCustomerConfirmDetails(customer, orderId) {
+  const text = [
+    "Almost done! Please confirm your delivery details:",
+    "",
+    `Name:     ${customer.name}`,
+    `Phone:    ${customer.phone}`,
+    `Address:  ${customer.address}`,
+  ].join("\n");
+
+  try {
+    await bot.telegram.sendMessage(
+      Number(customer.telegramUserId),
+      text,
+      Markup.inlineKeyboard([
+        [Markup.button.callback("Confirm and pay", `confirm_pay:${orderId}`)],
+        [Markup.button.callback("Update details", "update_details")],
+      ])
+    );
+  } catch (err) {
+    logger.error(
+      { err, customerId: customer.id, orderId },
+      "Failed to send confirm-details DM"
+    );
+  }
+}
+
+/**
  * If a user tries to Place Order without saved details, DM them a button
  * that drops them straight into the details wizard.
  */

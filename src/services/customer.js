@@ -12,8 +12,12 @@ export async function findById(id) {
   return customerDal.findById(id);
 }
 
-export async function updateDetails(id, { name, phone, address }) {
-  return customerDal.updateDetails(id, { name, phone, address });
+/**
+ * Partial update — pass any subset of { name, phone, address }.
+ * Fields not present are left untouched.
+ */
+export async function updateDetails(id, fields) {
+  return customerDal.updateDetails(id, fields);
 }
 
 export function hasCompleteDetails(customer) {
