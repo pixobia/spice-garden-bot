@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Spice Garden</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="loading" class="loading">Loading…</div>
+
+  <div id="app" class="app hidden">
+    <header class="hd">
+      <button id="back-btn" class="hd-btn hidden" aria-label="Back">‹</button>
+      <span id="hd-title" class="hd-title">Menu</span>
+    </header>
+
+    <section id="view-menu" class="view">
+      <div class="tools">
+        <input id="search" class="search" placeholder="Search dishes..." />
+      </div>
+      <div id="categories" class="categories"></div>
+    </section>
+
+    <section id="view-cart" class="view hidden">
+      <div id="cart-list" class="cart-list"></div>
+      <div id="cart-empty" class="empty hidden">Your cart is empty.</div>
+      <div id="cart-totals" class="cart-totals hidden">
+        <div class="row"><span class="lbl">Subtotal</span><span id="t-sub">₹0</span></div>
+        <div class="row"><span class="lbl">Delivery</span><span id="t-del">₹0</span></div>
+        <div class="row total"><span>Total</span><span id="t-tot">₹0</span></div>
+      </div>
+    </section>
+
+    <footer class="ft">
+      <button id="cta" class="cta" disabled>View cart</button>
+    </footer>
+  </div>
+
+  <div id="error" class="error hidden"></div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
