@@ -14,7 +14,7 @@
     search: "",
     openCategories: new Set(),
     placing: false,
-    deliveryFeePaise: 0,
+    deliveryFee: 0,
     sync: {
       pending: new Map(), // itemId -> latest qty
       timer: null,
@@ -22,7 +22,7 @@
     },
   };
 
-  const fmt = (paise) => "₹" + (paise / 100).toLocaleString("en-IN");
+  const fmt = (rupees) => "₹" + rupees.toLocaleString("en-IN");
 
   const qtyFor = (itemId) =>
     state.cartItems.find((x) => x.itemId === itemId)?.quantity || 0;
@@ -30,7 +30,7 @@
   const subtotal = () =>
     state.cartItems.reduce((s, x) => s + x.quantity * x.priceAtTime, 0);
   const deliveryFee = () =>
-    state.cartItems.length > 0 ? state.deliveryFeePaise : 0;
+    state.cartItems.length > 0 ? state.deliveryFee : 0;
   const total = () => subtotal() + deliveryFee();
 
   let itemIndex = new Map();
@@ -186,7 +186,7 @@
     if (state.view === "menu") {
       show(el.viewMenu);
       hide(el.viewCart);
-      el.title.textContent = "Menu — Spice Garden";
+      el.title.textContent = "Menu — Crust & Fuel";
       hide(el.backBtn);
       renderMenuList();
     } else {
@@ -351,7 +351,7 @@
     });
 
     el.tSub.textContent = fmt(subtotal());
-    el.tDel.textContent = fmt(deliveryFee());
+    el.tDel.textContent = deliveryFee() === 0 ? "Free" : fmt(deliveryFee());
     el.tTot.textContent = fmt(total());
   }
 
@@ -379,7 +379,7 @@
       state.menu = data.menu;
       state.cartOrderId = data.cart.id;
       state.cartItems = Array.isArray(data.cart.items) ? data.cart.items : [];
-      state.deliveryFeePaise = data.deliveryFeePaise ?? 0;
+      state.deliveryFee = data.deliveryFee ?? 0;
       rebuildItemIndex();
       if (state.menu.length > 0) state.openCategories.add(state.menu[0].name);
       state.boot = "ready";

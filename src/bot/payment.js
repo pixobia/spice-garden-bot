@@ -2,7 +2,7 @@ import * as orderService from "../services/order.js";
 import * as upiService from "../services/upi.js";
 import { logger } from "../logger.js";
 
-const fmtINR = (paise) => `₹${(paise / 100).toLocaleString("en-IN")}`;
+const fmtINR = (rupees) => `₹${rupees.toLocaleString("en-IN")}`;
 
 /**
  * Generate the UPI QR for an order and send it to the user.
@@ -16,7 +16,7 @@ export async function sendUpiQr(ctx, orderId) {
 
   const uri = upiService.buildUri({
     orderId: order.id,
-    amountPaise: order.total,
+    amount: order.total,
   });
   const ref = upiService.buildRef(order.id);
   const qrPng = await upiService.generateQrPng(uri);

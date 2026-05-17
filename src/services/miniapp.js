@@ -31,6 +31,6 @@ export async function getInitData(telegramUserId) {
       deliveryFee: cart.deliveryFee,
       total: cart.total,
     },
-    deliveryFeePaise: config.DELIVERY_FEE_PAISE,
+    deliveryFee: config.DELIVERY_FEE,
   };
 }

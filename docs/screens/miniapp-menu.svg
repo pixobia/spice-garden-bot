@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <clipPath id="phone"><rect x="0" y="0" width="360" height="640" rx="24"/></clipPath>
+  </defs>
+  <g clip-path="url(#phone)">
+    <rect width="360" height="640" fill="#ffffff"/>
+
+    <!-- Header -->
+    <rect x="0" y="0" width="360" height="50" fill="#f6f7f9"/>
+    <line x1="0" y1="50" x2="360" y2="50" stroke="#e5e7eb" stroke-width="0.5"/>
+    <text x="16" y="32" font-size="15" font-weight="500" fill="#111827">Menu — Crust &amp; Fuel</text>
+
+    <!-- Search bar -->
+    <rect x="12" y="62" width="336" height="36" rx="8" fill="#f1f3f5" stroke="#0000001f" stroke-width="0.5"/>
+    <text x="24" y="85" font-size="13" fill="#9ca3af">Search the menu...</text>
+    <line x1="0" y1="110" x2="360" y2="110" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <!-- Category: Burgers (expanded) -->
+    <rect x="0" y="110" width="360" height="42" fill="#fafafa"/>
+    <text x="16" y="137" font-size="11" fill="#6b7280">▾</text>
+    <text x="32" y="137" font-size="14" font-weight="500" fill="#111827">Burgers</text>
+    <text x="344" y="137" font-size="12" fill="#6b7280" text-anchor="end">15 items</text>
+    <line x1="0" y1="152" x2="360" y2="152" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <!-- Item 1: Veg Burger (Add) -->
+    <rect x="16" y="166" width="52" height="52" rx="8" fill="#e5e7eb"/>
+    <text x="42" y="196" font-size="9" fill="#9ca3af" text-anchor="middle">burger</text>
+    <text x="80" y="186" font-size="13" font-weight="500" fill="#111827">Veg Burger</text>
+    <text x="80" y="204" font-size="12" fill="#6b7280">₹79</text>
+    <rect x="290" y="178" width="56" height="30" rx="8" fill="#e8f4fc" stroke="#b9dcf2" stroke-width="0.5"/>
+    <text x="318" y="198" font-size="13" font-weight="500" fill="#0c447c" text-anchor="middle">Add</text>
+    <line x1="16" y1="232" x2="344" y2="232" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <!-- Item 2: Paneer Burger (qty 2) -->
+    <rect x="16" y="246" width="52" height="52" rx="8" fill="#e5e7eb"/>
+    <text x="42" y="276" font-size="9" fill="#9ca3af" text-anchor="middle">burger</text>
+    <text x="80" y="266" font-size="13" font-weight="500" fill="#111827">Paneer Burger</text>
+    <text x="80" y="284" font-size="12" fill="#6b7280">₹90</text>
+    <rect x="262" y="258" width="84" height="30" rx="8" fill="#ffffff" stroke="#00000029" stroke-width="0.5"/>
+    <text x="276" y="278" font-size="14" fill="#168acd" text-anchor="middle">−</text>
+    <text x="304" y="278" font-size="13" font-weight="500" fill="#111827" text-anchor="middle">2</text>
+    <text x="332" y="278" font-size="14" fill="#168acd" text-anchor="middle">+</text>
+    <line x1="16" y1="312" x2="344" y2="312" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <!-- Item 3: Chicken Burger -->
+    <rect x="16" y="326" width="52" height="52" rx="8" fill="#e5e7eb"/>
+    <text x="42" y="356" font-size="9" fill="#9ca3af" text-anchor="middle">burger</text>
+    <text x="80" y="346" font-size="13" font-weight="500" fill="#111827">Chicken Burger</text>
+    <text x="80" y="364" font-size="12" fill="#6b7280">₹90</text>
+    <rect x="290" y="338" width="56" height="30" rx="8" fill="#e8f4fc" stroke="#b9dcf2" stroke-width="0.5"/>
+    <text x="318" y="358" font-size="13" font-weight="500" fill="#0c447c" text-anchor="middle">Add</text>
+
+    <!-- Collapsed categories below -->
+    <line x1="0" y1="400" x2="360" y2="400" stroke="#e5e7eb" stroke-width="0.5"/>
+    <rect x="0" y="400" width="360" height="42" fill="#ffffff"/>
+    <text x="16" y="427" font-size="11" fill="#6b7280">›</text>
+    <text x="32" y="427" font-size="14" font-weight="500" fill="#111827">Wraps</text>
+    <text x="344" y="427" font-size="12" fill="#6b7280" text-anchor="end">8 items</text>
+    <line x1="0" y1="442" x2="360" y2="442" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <text x="16" y="469" font-size="11" fill="#6b7280">›</text>
+    <text x="32" y="469" font-size="14" font-weight="500" fill="#111827">Nuggets &amp; Chicken</text>
+    <text x="344" y="469" font-size="12" fill="#6b7280" text-anchor="end">7 items</text>
+    <line x1="0" y1="484" x2="360" y2="484" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <text x="16" y="511" font-size="11" fill="#6b7280">›</text>
+    <text x="32" y="511" font-size="14" font-weight="500" fill="#111827">Momos / Sandwiches</text>
+    <text x="344" y="511" font-size="12" fill="#6b7280" text-anchor="end">11 items</text>
+    <line x1="0" y1="526" x2="360" y2="526" stroke="#e5e7eb" stroke-width="0.5"/>
+
+    <text x="16" y="553" font-size="11" fill="#6b7280">›</text>
+    <text x="32" y="553" font-size="14" font-weight="500" fill="#111827">Pasta</text>
+    <text x="344" y="553" font-size="12" fill="#6b7280" text-anchor="end">5 items</text>
+
+    <!-- Sticky footer CTA -->
+    <line x1="0" y1="580" x2="360" y2="580" stroke="#e5e7eb" stroke-width="0.5"/>
+    <rect x="0" y="580" width="360" height="60" fill="#ffffff"/>
+    <rect x="12" y="592" width="336" height="40" rx="8" fill="#168acd"/>
+    <text x="180" y="617" font-size="14" font-weight="500" fill="#ffffff" text-anchor="middle">View cart</text>
+  </g>
+</svg>

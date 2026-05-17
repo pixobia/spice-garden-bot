@@ -10,7 +10,7 @@ export default function registerStart(bot) {
     await customerService.findOrCreate(ctx.from.id);
 
     await ctx.reply(
-      'Welcome to Spice Garden!\n\nFresh, home-style meals made to order. Browse the menu and place your order in a few taps.',
+      'Welcome to Crust & Fuel!\n\nCafé & juice bar — fuel your cravings. Tap below to browse the menu and order in a few taps.',
       Markup.inlineKeyboard([
         [Markup.button.webApp('View menu', miniappUrl())],
       ]),

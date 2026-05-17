@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs><clipPath id="p1"><rect x="0" y="0" width="360" height="640" rx="24"/></clipPath></defs>
+  <g clip-path="url(#p1)">
+    <rect width="360" height="640" fill="#ffffff"/>
+
+    <rect x="0" y="0" width="360" height="50" fill="#f6f7f9"/>
+    <line x1="0" y1="50" x2="360" y2="50" stroke="#e5e7eb" stroke-width="0.5"/>
+    <circle cx="32" cy="25" r="16" fill="#d6ecfa"/>
+    <text x="32" y="30" font-size="13" font-weight="500" fill="#168acd" text-anchor="middle">CF</text>
+    <text x="56" y="22" font-size="14" font-weight="500" fill="#111827">Crust &amp; Fuel Bot</text>
+    <text x="56" y="36" font-size="11" fill="#6b7280">bot · online</text>
+
+    <rect x="0" y="50" width="360" height="530" fill="#e7ebf0"/>
+
+    <!-- /start user bubble -->
+    <rect x="294" y="68" width="52" height="26" rx="13" fill="#effdde"/>
+    <text x="320" y="85" font-size="12" fill="#111827" text-anchor="middle">/start</text>
+
+    <!-- Welcome bot bubble -->
+    <rect x="12" y="108" width="280" height="120" rx="14" fill="#ffffff"/>
+    <text x="22" y="128" font-size="13" font-weight="500" fill="#111827">Welcome to Crust &amp; Fuel!</text>
+    <text x="22" y="158" font-size="13" fill="#111827">Café &amp; juice bar — fuel your cravings.</text>
+    <text x="22" y="178" font-size="13" fill="#111827">Tap below to browse the menu and</text>
+    <text x="22" y="198" font-size="13" fill="#111827">order in a few taps.</text>
+
+    <!-- View menu inline button with mini-app icon -->
+    <rect x="12" y="244" width="280" height="40" rx="8" fill="#ffffff" stroke="#0000001f" stroke-width="0.5"/>
+    <text x="152" y="269" font-size="13" font-weight="500" fill="#168acd" text-anchor="middle">View menu</text>
+    <rect x="270" y="252" width="12" height="12" rx="1" fill="none" stroke="#9ca3af" stroke-width="1"/>
+
+    <line x1="0" y1="580" x2="360" y2="580" stroke="#e5e7eb" stroke-width="0.5"/>
+    <rect x="0" y="580" width="360" height="60" fill="#ffffff"/>
+    <rect x="12" y="595" width="300" height="30" rx="15" fill="#f1f3f5"/>
+    <text x="24" y="615" font-size="12" fill="#9ca3af">Message</text>
+    <text x="332" y="615" font-size="18" fill="#168acd">›</text>
+  </g>
+</svg>

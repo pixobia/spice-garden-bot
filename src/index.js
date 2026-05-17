@@ -54,6 +54,19 @@ async function main() {
     logger.info(`Mini App  : ${config.PUBLIC_URL}/miniapp/`);
   });
 
+  try {
+    await bot.telegram.setChatMenuButton({
+      menu_button: {
+        type: 'web_app',
+        text: 'Order',
+        web_app: { url: `${config.PUBLIC_URL}/miniapp/` },
+      },
+    });
+    logger.info(`Menu button set → ${config.PUBLIC_URL}/miniapp/`);
+  } catch (err) {
+    logger.error({ err }, 'Failed to set menu button');
+  }
+
   await bot.launch();
   logger.info('Telegram bot started (long polling)');
 

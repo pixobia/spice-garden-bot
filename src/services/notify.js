@@ -6,7 +6,7 @@ import * as orderService from "./order.js";
 import * as customerService from "./customer.js";
 import * as upiService from "./upi.js";
 
-const fmtINR = (paise) => `₹${(paise / 100).toLocaleString("en-IN")}`;
+const fmtINR = (rupees) => `₹${rupees.toLocaleString("en-IN")}`;
 
 /**
  * DM the admin when a new order moves to AWAITING_PAYMENT.
@@ -31,7 +31,7 @@ export async function notifyAdminNewOrder(order) {
     ...itemLines,
     "",
     `Subtotal: ${fmtINR(order.subtotal)}`,
-    `Delivery: ${fmtINR(order.deliveryFee)}`,
+    `Delivery: ${order.deliveryFee === 0 ? 'Free' : fmtINR(order.deliveryFee)}`,
     `Total:    ${fmtINR(order.total)}`,
     "",
     `UPI ref: Order-${order.id}`,
@@ -62,7 +62,7 @@ export async function notifyCustomerPaid(telegramUserId, orderId) {
     "",
     `Your order #${orderId} is being prepared. Expected delivery in 15–30 minutes.`,
     "",
-    "Thanks for ordering with Spice Garden.",
+    "Thanks for ordering with Crust & Fuel.",
   ].join("\n");
   try {
     await bot.telegram.sendMessage(Number(telegramUserId), text);
@@ -97,7 +97,7 @@ export async function notifyCustomerUpiQr(telegramUserId, order) {
   const chatId = Number(telegramUserId);
   const uri = upiService.buildUri({
     orderId: order.id,
-    amountPaise: order.total,
+    amount: order.total,
   });
   const ref = upiService.buildRef(order.id);
   const payUrl = `${config.PUBLIC_URL}/pay/${order.id}`;

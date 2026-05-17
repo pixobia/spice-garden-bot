@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs><clipPath id="p6"><rect x="0" y="0" width="360" height="640" rx="24"/></clipPath></defs>
+  <g clip-path="url(#p6)">
+    <rect width="360" height="640" fill="#ffffff"/>
+
+    <rect x="0" y="0" width="360" height="50" fill="#f6f7f9"/>
+    <line x1="0" y1="50" x2="360" y2="50" stroke="#e5e7eb" stroke-width="0.5"/>
+    <circle cx="32" cy="25" r="16" fill="#fde9b8"/>
+    <text x="32" y="30" font-size="13" font-weight="500" fill="#8a5b00" text-anchor="middle">AD</text>
+    <text x="56" y="22" font-size="14" font-weight="500" fill="#111827">Crust &amp; Fuel Admin</text>
+    <text x="56" y="36" font-size="11" fill="#6b7280">admin chat</text>
+
+    <rect x="0" y="50" width="360" height="530" fill="#e7ebf0"/>
+
+    <!-- Admin order bubble (warning tinted) -->
+    <rect x="12" y="68" width="336" height="332" rx="14" fill="#fff4d6"/>
+    <text x="22" y="90" font-size="13" font-weight="500" fill="#5b3d00">New order  ·  #1042</text>
+    <text x="22" y="120" font-size="12" fill="#5b3d00">Customer:  Sathvik K</text>
+    <text x="22" y="138" font-size="12" fill="#5b3d00">Phone:     +91 98xxx xx210</text>
+    <text x="22" y="156" font-size="12" fill="#5b3d00">Address:   4B, Lotus Apt, Indiranagar</text>
+    <text x="22" y="186" font-size="12" font-weight="500" fill="#5b3d00">Items:</text>
+    <text x="22" y="204" font-size="12" fill="#5b3d00">• Paneer Burger × 2 = ₹180</text>
+    <text x="22" y="222" font-size="12" fill="#5b3d00">• Veg Wrap × 1 = ₹80</text>
+    <text x="22" y="240" font-size="12" fill="#5b3d00">• Mango Lassi × 1 = ₹60</text>
+    <text x="22" y="270" font-size="12" fill="#5b3d00">Subtotal: ₹320</text>
+    <text x="22" y="288" font-size="12" font-weight="500" fill="#1f8a3b">Delivery: Free</text>
+    <text x="22" y="306" font-size="12" font-weight="500" fill="#5b3d00">Total:    ₹320</text>
+    <text x="22" y="340" font-size="12" fill="#5b3d00">UPI ref: Order-1042</text>
+
+    <!-- Admin action buttons -->
+    <rect x="12" y="420" width="336" height="40" rx="8" fill="#ffffff" stroke="#0000001f" stroke-width="0.5"/>
+    <text x="180" y="445" font-size="13" font-weight="500" fill="#1f8a3b" text-anchor="middle">Order placed successfully</text>
+
+    <rect x="12" y="470" width="336" height="40" rx="8" fill="#ffffff" stroke="#0000001f" stroke-width="0.5"/>
+    <text x="180" y="495" font-size="13" font-weight="500" fill="#b3261e" text-anchor="middle">Reject order</text>
+
+    <line x1="0" y1="580" x2="360" y2="580" stroke="#e5e7eb" stroke-width="0.5"/>
+    <rect x="0" y="580" width="360" height="60" fill="#ffffff"/>
+    <rect x="12" y="595" width="300" height="30" rx="15" fill="#f1f3f5"/>
+    <text x="24" y="615" font-size="12" fill="#9ca3af">Message</text>
+    <text x="332" y="615" font-size="18" fill="#168acd">›</text>
+  </g>
+</svg>

@@ -27,7 +27,7 @@ export async function redirectToUpi(req, res, next) {
 
     const uri = upiService.buildUri({
       orderId: order.id,
-      amountPaise: order.total,
+      amount: order.total,
     });
     res.redirect(302, uri);
   } catch (err) {

@@ -11,7 +11,7 @@ model Item {
   id           Int      @id @default(autoincrement())
   categoryName String
   name         String
-  price        Int      // paise — ₹1 = 100, avoids float drift
+  price        Int      // whole rupees (no fractional pricing in this menu)
   imageUrl     String?
   isAvailable  Boolean  @default(true)
 

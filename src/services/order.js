@@ -6,7 +6,7 @@ import { config } from '../config.js';
  * Compute totals from a Mini-App-shaped items array.
  * items: [{ itemId, quantity, priceAtTime }]
  */
-function computeTotals(items, deliveryFee = config.DELIVERY_FEE_PAISE) {
+function computeTotals(items, deliveryFee = config.DELIVERY_FEE) {
   const subtotal = items.reduce((sum, it) => sum + it.quantity * it.priceAtTime, 0);
   return {
     subtotal,

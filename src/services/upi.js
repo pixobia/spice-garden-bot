@@ -2,15 +2,14 @@ import QRCode from 'qrcode';
 import { config } from '../config.js';
 
 /**
- * Build a UPI deep link. Amount is in rupees (not paise).
+ * Build a UPI deep link. Amount is in whole rupees.
  * Format: upi://pay?pa=...&pn=...&am=...&cu=INR&tn=Order-<id>
  */
-export function buildUri({ orderId, amountPaise }) {
-  const amountRupees = (amountPaise / 100).toFixed(2);
+export function buildUri({ orderId, amount }) {
   const params = new URLSearchParams({
     pa: config.MERCHANT_VPA,
     pn: config.MERCHANT_NAME,
-    am: amountRupees,
+    am: amount.toFixed(2),
     cu: 'INR',
     tn: `Order-${orderId}`,
   });

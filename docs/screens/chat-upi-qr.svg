@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <defs><clipPath id="p5"><rect x="0" y="0" width="360" height="640" rx="24"/></clipPath></defs>
+  <g clip-path="url(#p5)">
+    <rect width="360" height="640" fill="#ffffff"/>
+
+    <rect x="0" y="0" width="360" height="50" fill="#f6f7f9"/>
+    <line x1="0" y1="50" x2="360" y2="50" stroke="#e5e7eb" stroke-width="0.5"/>
+    <circle cx="32" cy="25" r="16" fill="#d6ecfa"/>
+    <text x="32" y="30" font-size="13" font-weight="500" fill="#168acd" text-anchor="middle">CF</text>
+    <text x="56" y="22" font-size="14" font-weight="500" fill="#111827">Crust &amp; Fuel Bot</text>
+    <text x="56" y="36" font-size="11" fill="#6b7280">bot · online</text>
+
+    <rect x="0" y="50" width="360" height="530" fill="#e7ebf0"/>
+
+    <!-- Photo bubble with QR + caption + Pay button -->
+    <rect x="12" y="64" width="280" height="380" rx="14" fill="#ffffff"/>
+
+    <!-- Fake QR pattern -->
+    <rect x="60" y="84" width="184" height="184" fill="#ffffff" stroke="#0000001f" stroke-width="0.5"/>
+    <g fill="#111827">
+      <rect x="68" y="92" width="36" height="36"/>
+      <rect x="76" y="100" width="20" height="20" fill="#ffffff"/>
+      <rect x="80" y="104" width="12" height="12"/>
+      <rect x="200" y="92" width="36" height="36"/>
+      <rect x="208" y="100" width="20" height="20" fill="#ffffff"/>
+      <rect x="212" y="104" width="12" height="12"/>
+      <rect x="68" y="224" width="36" height="36"/>
+      <rect x="76" y="232" width="20" height="20" fill="#ffffff"/>
+      <rect x="80" y="236" width="12" height="12"/>
+      <rect x="116" y="100" width="8" height="8"/>
+      <rect x="128" y="92" width="8" height="8"/>
+      <rect x="140" y="104" width="8" height="8"/>
+      <rect x="156" y="96" width="8" height="8"/>
+      <rect x="172" y="104" width="8" height="8"/>
+      <rect x="116" y="120" width="8" height="8"/>
+      <rect x="132" y="128" width="8" height="8"/>
+      <rect x="148" y="120" width="8" height="8"/>
+      <rect x="164" y="128" width="8" height="8"/>
+      <rect x="180" y="120" width="8" height="8"/>
+      <rect x="116" y="148" width="8" height="8"/>
+      <rect x="128" y="156" width="8" height="8"/>
+      <rect x="144" y="148" width="8" height="8"/>
+      <rect x="160" y="156" width="8" height="8"/>
+      <rect x="176" y="148" width="8" height="8"/>
+      <rect x="116" y="172" width="8" height="8"/>
+      <rect x="132" y="180" width="8" height="8"/>
+      <rect x="148" y="172" width="8" height="8"/>
+      <rect x="164" y="180" width="8" height="8"/>
+      <rect x="180" y="172" width="8" height="8"/>
+      <rect x="116" y="200" width="8" height="8"/>
+      <rect x="132" y="208" width="8" height="8"/>
+      <rect x="148" y="200" width="8" height="8"/>
+      <rect x="164" y="208" width="8" height="8"/>
+      <rect x="180" y="200" width="8" height="8"/>
+      <rect x="116" y="228" width="8" height="8"/>
+      <rect x="132" y="236" width="8" height="8"/>
+      <rect x="148" y="228" width="8" height="8"/>
+      <rect x="164" y="236" width="8" height="8"/>
+      <rect x="180" y="228" width="8" height="8"/>
+    </g>
+
+    <!-- Caption -->
+    <text x="22" y="294" font-size="13" font-weight="500" fill="#111827">Order #1042  ·  ₹320</text>
+    <text x="22" y="320" font-size="12" fill="#6b7280">Tap Pay with UPI app below, or</text>
+    <text x="22" y="336" font-size="12" fill="#6b7280">scan the QR above.</text>
+
+    <!-- Pay with UPI app inline button -->
+    <line x1="12" y1="360" x2="292" y2="360" stroke="#e5e7eb" stroke-width="0.5"/>
+    <text x="152" y="400" font-size="13" font-weight="500" fill="#168acd" text-anchor="middle">Pay with UPI app</text>
+    <rect x="266" y="384" width="12" height="12" rx="1" fill="none" stroke="#9ca3af" stroke-width="1"/>
+
+    <!-- Follow-up bot bubble -->
+    <rect x="12" y="460" width="320" height="44" rx="14" fill="#ffffff"/>
+    <text x="22" y="482" font-size="12" fill="#111827">We'll confirm once your payment is</text>
+    <text x="22" y="498" font-size="12" fill="#111827">received. Reference: Order-1042</text>
+
+    <line x1="0" y1="580" x2="360" y2="580" stroke="#e5e7eb" stroke-width="0.5"/>
+    <rect x="0" y="580" width="360" height="60" fill="#ffffff"/>
+    <rect x="12" y="595" width="300" height="30" rx="15" fill="#f1f3f5"/>
+    <text x="24" y="615" font-size="12" fill="#9ca3af">Message</text>
+    <text x="332" y="615" font-size="18" fill="#168acd">›</text>
+  </g>
+</svg>
