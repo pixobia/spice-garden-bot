@@ -3,16 +3,30 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Image strategy:
-// Each item gets a Flickr photo relevant to its category, kept stable across
-// re-seeds by deriving a deterministic "lock" hash from the item name.
-// Replace with your own CDN/Cloudinary URLs in production.
+// Each item gets a unique placehold.co URL with its name and a pastel
+// background colour picked deterministically from its name hash. These
+// load instantly with 100% uptime — no AI service or third-party CDN to
+// flake out.
+//
+// To use real photos: open Prisma Studio (`npx prisma studio`), find the
+// item row in the `items` table, and paste your Cloudinary/S3/Unsplash
+// URL into `imageUrl`. Or edit this script to replace `img(name)` with a
+// hand-curated map keyed by item name.
 const hash = (s) => {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
   return Math.abs(h);
 };
-const img = (name, keyword) =>
-  `https://loremflickr.com/400/300/${encodeURIComponent(keyword)},food?lock=${hash(name)}`;
+
+// 8 soft pastel backgrounds — gives the menu visual variety without
+// being garish. Foreground is a single dark slate.
+const BG = ['E5E7EB', 'FED7D7', 'FEF3C7', 'D1FAE5', 'DBEAFE', 'E0E7FF', 'F3E8FF', 'FCE7F3'];
+const FG = '4B5563';
+
+const img = (name) => {
+  const bg = BG[hash(name) % BG.length];
+  return `https://placehold.co/400x300/${bg}/${FG}/png?text=${encodeURIComponent(name)}&font=raleway`;
+};
 
 // Prices in whole rupees. Item names match the printed menu.
 const menu = [
@@ -277,7 +291,7 @@ async function main() {
           categoryName,
           name,
           price,
-          imageUrl: img(`${categoryName}/${name}`, keyword),
+          imageUrl: img(name),
           isAvailable: true,
         },
       });
