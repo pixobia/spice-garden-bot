@@ -45,17 +45,31 @@ export default function registerConfirmDetails(bot) {
     const orderId = Number(ctx.match[1]);
     const customer = await customerService.findByTelegramId(ctx.from.id);
 
+    let order;
     try {
-      const order = await orderService.placeOrder(orderId, customer.id);
-      // Send UPI QR to user + admin DM (in parallel, best-effort).
-      await Promise.all([
-        notify.notifyCustomerUpiQr(customer.telegramUserId, order),
-        notify.notifyAdminNewOrder(order),
-      ]);
+      order = await orderService.placeOrder(orderId, customer.id);
     } catch (err) {
       logger.error({ err, orderId }, 'Failed to place order');
       await ctx.reply("Sorry, we couldn't place your order right now. Please try again in a moment.");
+      return;
     }
+
+    // Fire-and-forget the QR + admin notification so the webhook callback
+    // returns 200 to Telegram immediately. Without this, sendPhoto's retry
+    // chain (up to ~2.4s) keeps the response open long enough that Telegram
+    // can time out and replay the callback — duplicating orders. Each notify
+    // function already has its own try/catch + structured logging, so an
+    // unhandled rejection here would only happen if those guards regress.
+    Promise.allSettled([
+      notify.notifyCustomerUpiQr(customer.telegramUserId, order),
+      notify.notifyAdminNewOrder(order),
+    ]).then((results) => {
+      for (const r of results) {
+        if (r.status === 'rejected') {
+          logger.error({ err: r.reason, orderId }, 'Background notify failed');
+        }
+      }
+    });
   });
 
   bot.action('update_details', async (ctx) => {

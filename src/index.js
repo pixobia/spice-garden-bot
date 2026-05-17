@@ -88,7 +88,13 @@ async function main() {
   // 5. Graceful shutdown
   const shutdown = async (signal) => {
     logger.info(`Received ${signal}, shutting down...`);
-    bot.stop(signal);
+    // bot.stop() throws "Bot is not running!" if launch() was never called
+    // (webhook mode skips launch). Swallow it — there's nothing to stop.
+    try {
+      bot.stop(signal);
+    } catch (err) {
+      /* webhook mode: no polling loop to terminate */
+    }
     await db.$disconnect();
     process.exit(0);
   };

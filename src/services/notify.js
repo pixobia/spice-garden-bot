@@ -8,6 +8,23 @@ import * as upiService from "./upi.js";
 
 const fmtINR = (rupees) => `₹${rupees.toLocaleString("en-IN")}`;
 
+// Render's free tier occasionally drops the outbound connection to Telegram
+// mid-request (ECONNRESET / socket hang up). Retry transient transport-level
+// failures a few times before giving up.
+const TRANSIENT = new Set(["ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "EAI_AGAIN"]);
+async function withRetry(fn, label, attempts = 3) {
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const transient = TRANSIENT.has(err?.code) || err?.name === "FetchError";
+      if (!transient || i === attempts) throw err;
+      logger.warn({ err: err?.message, attempt: i, label }, "Transient send error — retrying");
+      await new Promise((r) => setTimeout(r, 400 * i));
+    }
+  }
+}
+
 /**
  * DM the admin when a new order moves to AWAITING_PAYMENT.
  * Buttons let the admin confirm or reject in one tap.
@@ -131,11 +148,18 @@ export async function notifyCustomerUpiQr(telegramUserId, order) {
       );
     }
 
-    await bot.telegram.sendPhoto(chatId, { source: qrPng }, photoOpts);
+    await withRetry(
+      () => bot.telegram.sendPhoto(chatId, { source: qrPng }, photoOpts),
+      "sendPhoto-qr",
+    );
 
-    await bot.telegram.sendMessage(
-      chatId,
-      `We'll confirm once your payment is received.  ·  Reference: ${ref}`,
+    await withRetry(
+      () =>
+        bot.telegram.sendMessage(
+          chatId,
+          `We'll confirm once your payment is received.  ·  Reference: ${ref}`,
+        ),
+      "sendMessage-qr-followup",
     );
 
     logger.info({ orderId: order.id, telegramUserId, total: order.total }, "Sent UPI QR");

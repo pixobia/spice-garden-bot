@@ -1,5 +1,6 @@
 import * as orderDal from '../dal/order.js';
 import * as menuDal from '../dal/menu.js';
+import { db } from '../db.js';
 import { config } from '../config.js';
 
 /**
@@ -24,32 +25,46 @@ export async function getOrder(orderId) {
 }
 
 /**
- * Upsert a single item line in the cart.
- * Setting quantity to 0 removes the line.
+ * Upsert a single item line in the cart. Quantity 0 removes the line.
+ *
+ * Wrapped in a Postgres transaction with `SELECT ... FOR UPDATE` so that
+ * concurrent setItemQuantity calls on the same order serialise at the
+ * database level. Without this, two parallel calls would each read the
+ * same `items` JSON, each splice in their item, and the second write
+ * would clobber the first — items silently disappear from the cart.
  */
 export async function setItemQuantity(orderId, customerId, itemId, quantity) {
-  const order = await orderDal.findById(orderId);
-  if (!order) throw new Error('Order not found');
-  if (order.customerId !== customerId) throw new Error('Forbidden');
-  if (order.status !== 'CART') throw new Error('Cart is locked');
+  return db.$transaction(async (tx) => {
+    // Row-level lock — any other transaction touching this order row
+    // waits here until this transaction commits or rolls back.
+    await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
 
-  const item = await menuDal.findItemById(itemId);
-  if (!item) throw new Error('Item not found');
-  if (!item.isAvailable) throw new Error('Item not available');
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new Error('Order not found');
+    if (order.customerId !== customerId) throw new Error('Forbidden');
+    if (order.status !== 'CART') throw new Error('Cart is locked');
 
-  const items = Array.isArray(order.items) ? [...order.items] : [];
-  const idx = items.findIndex((i) => i.itemId === itemId);
+    const item = await tx.item.findUnique({ where: { id: itemId } });
+    if (!item) throw new Error('Item not found');
+    if (!item.isAvailable) throw new Error('Item not available');
 
-  if (quantity <= 0) {
-    if (idx !== -1) items.splice(idx, 1);
-  } else if (idx !== -1) {
-    items[idx] = { ...items[idx], quantity };
-  } else {
-    items.push({ itemId, quantity, priceAtTime: item.price });
-  }
+    const items = Array.isArray(order.items) ? [...order.items] : [];
+    const idx = items.findIndex((i) => i.itemId === itemId);
 
-  const totals = computeTotals(items);
-  return orderDal.updateCartContents(orderId, { items, ...totals });
+    if (quantity <= 0) {
+      if (idx !== -1) items.splice(idx, 1);
+    } else if (idx !== -1) {
+      items[idx] = { ...items[idx], quantity };
+    } else {
+      items.push({ itemId, quantity, priceAtTime: item.price });
+    }
+
+    const totals = computeTotals(items);
+    return tx.order.update({
+      where: { id: orderId },
+      data: { items, ...totals },
+    });
+  });
 }
 
 export async function removeItem(orderId, customerId, itemId) {
