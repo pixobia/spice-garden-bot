@@ -109,12 +109,21 @@ export async function notifyCustomerRejected(telegramUserId, orderId) {
 
 /**
  * DM the user a UPI QR with a "Pay with UPI app" button after order placement.
+ *
+ * Implementation note — why we pass a URL instead of a Buffer:
+ * We used to call `sendPhoto(chatId, { source: qrPng }, ...)` which streams
+ * the PNG bytes to api.telegram.org as multipart/form-data. On Render's free
+ * tier, that long-lived upload consistently failed with "socket hang up" —
+ * even though small JSON POSTs (sendMessage, etc.) from the same pod worked
+ * fine. Switching to URL mode means our outbound payload to Telegram is now
+ * a tiny JSON body; Telegram's CDN fetches the PNG from /qr/:id.png on its
+ * own. No more flaky multipart upload, no more ECONNRESET retries.
  */
 export async function notifyCustomerUpiQr(telegramUserId, order) {
   // Single try/catch around the whole function so NO error can escape and
-  // poison the Promise.all in the bot handler. On any failure we still log
-  // a structured error and DM the user a plain-text fallback so they aren't
-  // left wondering what happened.
+  // poison the Promise.allSettled in the bot handler. On any failure we still
+  // log a structured error and DM the user a plain-text fallback so they
+  // aren't left wondering what happened.
   try {
     if (!order || typeof order.total !== "number") {
       throw new Error(
@@ -122,34 +131,30 @@ export async function notifyCustomerUpiQr(telegramUserId, order) {
       );
     }
     const chatId = Number(telegramUserId);
-    const uri = upiService.buildUri({
-      orderId: order.id,
-      amount: order.total,
-    });
     const ref = upiService.buildRef(order.id);
     const payUrl = `${config.PUBLIC_URL}/pay/${order.id}`;
+    const qrUrl = `${config.PUBLIC_URL}/qr/${order.id}.png`;
 
-    // Telegram only accepts URL buttons whose href is a valid https:// URL.
-    // If PUBLIC_URL is mis-configured, attaching the button rejects the
-    // entire sendPhoto. Drop the button in that case so the QR still lands.
-    const hasValidPayUrl = /^https:\/\/[^/]+/.test(payUrl);
-
-    const caption = hasValidPayUrl
-      ? `Order #${order.id}  ·  ${fmtINR(order.total)}\nTap "Pay with UPI app" below, or scan the QR above.`
-      : `Order #${order.id}  ·  ${fmtINR(order.total)}\nScan the QR above with any UPI app to pay.`;
-
-    const qrPng = await upiService.generateQrPng(uri);
-
-    const photoOpts = { caption };
-    if (hasValidPayUrl) {
-      Object.assign(
-        photoOpts,
-        Markup.inlineKeyboard([[Markup.button.url("Pay with UPI app", payUrl)]]),
+    // Telegram requires HTTPS for both URL buttons AND URL-fetched photos.
+    // If PUBLIC_URL is mis-configured we can't usefully recover — log and
+    // fall through to the plain-text fallback below.
+    if (!/^https:\/\/[^/]+/.test(config.PUBLIC_URL)) {
+      throw new Error(
+        `PUBLIC_URL must be https://… got ${config.PUBLIC_URL}`,
       );
     }
 
+    const photoOpts = {
+      caption: `Order #${order.id}  ·  ${fmtINR(order.total)}\nTap "Pay with UPI app" below, or scan the QR above.`,
+      ...Markup.inlineKeyboard([
+        [Markup.button.url("Pay with UPI app", payUrl)],
+      ]),
+    };
+
+    // Pass the URL string — Telegram fetches the PNG from /qr/:id.png. This
+    // replaces the previous `{ source: buffer }` upload (see header comment).
     await withRetry(
-      () => bot.telegram.sendPhoto(chatId, { source: qrPng }, photoOpts),
+      () => bot.telegram.sendPhoto(chatId, qrUrl, photoOpts),
       "sendPhoto-qr",
     );
 
@@ -162,7 +167,10 @@ export async function notifyCustomerUpiQr(telegramUserId, order) {
       "sendMessage-qr-followup",
     );
 
-    logger.info({ orderId: order.id, telegramUserId, total: order.total }, "Sent UPI QR");
+    logger.info(
+      { orderId: order.id, telegramUserId, total: order.total, qrUrl },
+      "Sent UPI QR",
+    );
   } catch (err) {
     logger.error(
       {

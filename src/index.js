@@ -15,6 +15,7 @@ import customerRouter from './router/customer.js';
 import miniappRouter from './router/miniapp.js';
 import adminRouter from './router/admin.js';
 import payRouter from './router/pay.js';
+import qrRouter from './router/qr.js';
 
 import { errorHandler } from './middleware/error.js';
 
@@ -33,11 +34,30 @@ async function main() {
   app.use('/miniapp', express.static(path.join(projectRoot, 'public', 'miniapp')));
   app.use('/uploads', express.static(path.join(projectRoot, 'uploads')));
 
-  // Health
+  // Health — fast liveness probe, never touches the DB.
   app.get('/health', (_req, res) => res.json({ ok: true }));
+
+  // DB warm-keep. cron-job.org should hit this (not /health) every 10 minutes
+  // so Neon's free-tier compute doesn't autosuspend. Pinging /health alone
+  // keeps the Render pod awake but the DB still sleeps, which then surfaces
+  // as Prisma "terminating connection due to administrator command" (E57P01)
+  // on the next real request.
+  app.get('/health/db', async (_req, res) => {
+    try {
+      await db.$queryRaw`SELECT 1`;
+      res.json({ ok: true, db: 'up' });
+    } catch (err) {
+      logger.error({ err }, '/health/db failed');
+      res.status(503).json({ ok: false, db: 'down' });
+    }
+  });
 
   // Public UPI redirect — bot DM button points here, we 302 to upi://
   app.use('/pay', payRouter);
+
+  // Public QR PNG — Telegram fetches this URL instead of us multipart-uploading
+  // the bytes ourselves. See controllers/qr.js for the full rationale.
+  app.use('/qr', qrRouter);
 
   // API
   app.use('/api/menu', menuRouter);
