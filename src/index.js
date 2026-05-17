@@ -67,10 +67,25 @@ async function main() {
     logger.error({ err }, 'Failed to set menu button');
   }
 
-  await bot.launch();
-  logger.info('Telegram bot started (long polling)');
+  // 4. Start the bot.
+  //
+  // Production: webhook mode. Telegram pushes updates to our HTTPS endpoint
+  // as POST requests — no long-polling, so no 409 conflicts when Render
+  // rotates containers, and no in-flight polling stream to get killed during
+  // pod hibernation. This is the only reliable mode on shared cloud hosts.
+  //
+  // Development: long-polling. No public URL required, simpler to iterate.
+  const WEBHOOK_PATH = '/telegram-webhook';
+  if (config.NODE_ENV === 'production') {
+    app.use(
+      await bot.createWebhook({ domain: config.PUBLIC_URL, path: WEBHOOK_PATH }),
+    );
+    logger.info(`Telegram webhook registered: ${config.PUBLIC_URL}${WEBHOOK_PATH}`);
+  } else {
+    bot.launch().then(() => logger.info('Telegram bot started (long polling)'));
+  }
 
-  // 4. Graceful shutdown
+  // 5. Graceful shutdown
   const shutdown = async (signal) => {
     logger.info(`Received ${signal}, shutting down...`);
     bot.stop(signal);

@@ -98,14 +98,19 @@
 
     state.sync.inFlight += updates.length;
     try {
-      await Promise.all(
-        updates.map(([itemId, qty]) =>
-          api.setQty(state.cartOrderId, itemId, qty).catch((err) => {
-            console.error("Sync failed", { itemId, qty, err });
-            if (tg) tg.HapticFeedback?.notificationOccurred?.("error");
-          })
-        )
-      );
+      // Serialize. The server's setItemQuantity does read-modify-write on
+      // the order's JSON `items` column. If two updates run in parallel
+      // they each read the same initial state, each add their item, and
+      // the second write clobbers the first — items disappear from the
+      // cart. Sequential calls eliminate the race.
+      for (const [itemId, qty] of updates) {
+        try {
+          await api.setQty(state.cartOrderId, itemId, qty);
+        } catch (err) {
+          console.error("Sync failed", { itemId, qty, err });
+          if (tg) tg.HapticFeedback?.notificationOccurred?.("error");
+        }
+      }
     } finally {
       state.sync.inFlight = Math.max(0, state.sync.inFlight - updates.length);
     }

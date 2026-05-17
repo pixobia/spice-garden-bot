@@ -94,24 +94,33 @@ export async function notifyCustomerRejected(telegramUserId, orderId) {
  * DM the user a UPI QR with a "Pay with UPI app" button after order placement.
  */
 export async function notifyCustomerUpiQr(telegramUserId, order) {
-  const chatId = Number(telegramUserId);
-  const uri = upiService.buildUri({
-    orderId: order.id,
-    amount: order.total,
-  });
-  const ref = upiService.buildRef(order.id);
-  const payUrl = `${config.PUBLIC_URL}/pay/${order.id}`;
-
-  // Telegram only accepts URL buttons whose href is a valid https:// URL.
-  // If PUBLIC_URL is mis-configured, attaching the button rejects the
-  // entire sendPhoto. Drop the button in that case so the QR still lands.
-  const hasValidPayUrl = /^https:\/\/[^/]+/.test(payUrl);
-
-  const caption = hasValidPayUrl
-    ? `Order #${order.id}  ·  ${fmtINR(order.total)}\nTap "Pay with UPI app" below, or scan the QR above.`
-    : `Order #${order.id}  ·  ${fmtINR(order.total)}\nScan the QR above with any UPI app to pay.`;
-
+  // Single try/catch around the whole function so NO error can escape and
+  // poison the Promise.all in the bot handler. On any failure we still log
+  // a structured error and DM the user a plain-text fallback so they aren't
+  // left wondering what happened.
   try {
+    if (!order || typeof order.total !== "number") {
+      throw new Error(
+        `Bad order passed to notifyCustomerUpiQr: total=${order?.total}`,
+      );
+    }
+    const chatId = Number(telegramUserId);
+    const uri = upiService.buildUri({
+      orderId: order.id,
+      amount: order.total,
+    });
+    const ref = upiService.buildRef(order.id);
+    const payUrl = `${config.PUBLIC_URL}/pay/${order.id}`;
+
+    // Telegram only accepts URL buttons whose href is a valid https:// URL.
+    // If PUBLIC_URL is mis-configured, attaching the button rejects the
+    // entire sendPhoto. Drop the button in that case so the QR still lands.
+    const hasValidPayUrl = /^https:\/\/[^/]+/.test(payUrl);
+
+    const caption = hasValidPayUrl
+      ? `Order #${order.id}  ·  ${fmtINR(order.total)}\nTap "Pay with UPI app" below, or scan the QR above.`
+      : `Order #${order.id}  ·  ${fmtINR(order.total)}\nScan the QR above with any UPI app to pay.`;
+
     const qrPng = await upiService.generateQrPng(uri);
 
     const photoOpts = { caption };
@@ -128,11 +137,27 @@ export async function notifyCustomerUpiQr(telegramUserId, order) {
       chatId,
       `We'll confirm once your payment is received.  ·  Reference: ${ref}`,
     );
+
+    logger.info({ orderId: order.id, telegramUserId, total: order.total }, "Sent UPI QR");
   } catch (err) {
     logger.error(
-      { err, orderId: order.id, telegramUserId, payUrl, hasValidPayUrl },
+      {
+        err: err?.response || err?.message || String(err),
+        stack: err?.stack,
+        orderId: order?.id,
+        telegramUserId,
+        total: order?.total,
+        publicUrl: config.PUBLIC_URL,
+      },
       "Failed to send UPI QR to customer",
     );
+    // Last-resort plain-text fallback so the customer always gets *something*.
+    try {
+      await bot.telegram.sendMessage(
+        Number(telegramUserId),
+        `Order received  ·  ${fmtINR(order?.total ?? 0)}\n\nWe're generating your UPI QR — if it doesn't arrive in a moment, please reach out and we'll send a payment link manually.`,
+      );
+    } catch {}
   }
 }
 
