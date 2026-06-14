@@ -7,6 +7,7 @@ const router = Router();
 router.use(adminAuth);
 
 router.patch('/items/:id/availability', ctrl.setItemAvailability);
+router.post('/menu/refresh', ctrl.refreshMenu);
 router.post('/orders/:id/mark-paid', ctrl.markPaid);
 router.post('/orders/:id/reject', ctrl.rejectOrder);
 

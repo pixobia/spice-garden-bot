@@ -6,9 +6,11 @@ import { config } from '../config.js';
 /**
  * Bundled response for Mini App first paint.
  * Returns: { customer, menu, cart }
+ *
+ * `customer` is the row telegramAuth already find-or-created for this request,
+ * so we don't repeat that upsert here — we just fan out menu + cart in parallel.
  */
-export async function getInitData(telegramUserId) {
-  const customer = await customerService.findOrCreate(telegramUserId);
+export async function getInitData(customer) {
   const [menu, cart] = await Promise.all([
     menuService.getMenu(),
     orderService.getOrCreateCart(customer.id),

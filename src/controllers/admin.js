@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import * as menuDal from '../dal/menu.js';
+import * as menuService from '../services/menu.js';
 import * as orderService from '../services/order.js';
 import * as customerService from '../services/customer.js';
 import * as notify from '../services/notify.js';
@@ -12,11 +12,16 @@ export async function setItemAvailability(req, res, next) {
   try {
     const id = Number(req.params.id);
     const { isAvailable } = availabilitySchema.parse(req.body);
-    const updated = await menuDal.setItemAvailability(id, isAvailable);
+    const updated = await menuService.setItemAvailability(id, isAvailable);
     res.json(updated);
   } catch (err) {
     next(err);
   }
+}
+
+export function refreshMenu(req, res) {
+  menuService.invalidateMenuCache();
+  res.json({ ok: true, message: 'Menu cache cleared; next load rebuilds from the DB.' });
 }
 
 export async function markPaid(req, res, next) {
