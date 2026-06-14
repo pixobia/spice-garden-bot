@@ -25,6 +25,10 @@ const schema = z.object({
 
   MERCHANT_VPA: z.string().min(1),
   MERCHANT_NAME: z.string().min(1),
+  // Merchant Category Code from your Paytm for Business dashboard. Optional —
+  // when set, it's added to the UPI intent so the txn is classified as a
+  // merchant collection (P2M) rather than a person-to-person transfer.
+  MERCHANT_MCC: z.string().optional().default(""),
   DELIVERY_FEE_RUPEES: z.coerce.number().int().nonnegative().default(40),
 
   LOG_LEVEL: z
