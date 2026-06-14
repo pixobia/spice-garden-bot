@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -28,254 +29,167 @@ const img = (name) => {
   return `https://placehold.co/400x300/${bg}/${FG}/png?text=${encodeURIComponent(name)}&font=raleway`;
 };
 
-// Prices in whole rupees. Item names match the printed menu.
+// Prices in whole rupees. Item names match the printed Crust & Fuel menu.
 const menu = [
-  ['Fruit Bowls', 'fruit', [
-    ['Fresh Watermelon Bowl',              49],
-    ['Fresh Papaya Bowl',                  49],
-    ['Season Surprise Fruit Salad',        69],
-    ['Udapi Style Spiced Pineapple Bowl', 119],
-    ['Exotic Fruit Bowl',                  59],
-    ['Watermelon Mint Muddle Bowl',        49],
-    ['Masala Guava Bowl',                  69],
-    ['Citrus Love Bowl',                  109],
-    ['Badam Milk and Mixed Fruit Bowl',    69],
-    ['Fresh Apple Bowl',                  119],
-    ['Fresh Dragon Fruit Bowl',            49],
-    ['Fresh Muskmelon Bowl',               99],
-    ['Dragon Fruit Watermelon Mixed Bowl', 69],
-    ['Watermelon Papaya Mixed Bowl',      109],
-    ['Fresh Pomegranate Bowl',            269],
-    ['Family Pack Fruit',                 369],
-    ['Gift Pack',                          49],
-    ['Guava Bowl',                         59],
-  ]],
-
-  ['Non-Veg Special Salads', 'salad', [
-    ['CrunchChick', 130],
-    ['FiestaChick', 140],
-    ['EggCream',    100],
-  ]],
-
-  ['Veg Special Salads', 'salad', [
-    ['PaneerCrunch', 120],
-    ['CornCream',     90],
-    ['VegDelight',   100],
-  ]],
-
-  ['Meals & Combos', 'combo', [
-    ['Snack Meal',    150],
-    ['Dinner Meal',   220],
-    ['Steak Meal',    240],
-    ['Family Meal',   350],
-    ['Chicken Wings', 120],
+  ['Pizza', 'pizza', [
+    ['Plain Cheese Pizza',            89],
+    ['Seasonal Vegetable Pizza',     119],
+    ['Corn Cheese Pizza',            119],
+    ['Paneer Tikka Pizza',           139],
+    ['Peri Peri Chicken Pizza',      159],
+    ['BBQ Chicken Jalapeño Pizza',   169],
+    ['Chicken Tikka Pizza',          179],
+    ['Chicken Sausage & Onion Pizza', 179],
   ]],
 
   ['Burgers', 'burger', [
-    ['Veg Burger',                    79],
-    ['Paneer Burger',                 90],
-    ['Chicken Burger',                90],
-    ['Tandoori Burger',              135],
-    ['Special Burger',               150],
-    ['Barbecue Chicken Burger',      125],
-    ['Sizzler Burger',               169],
-    ['Dynamite Burger',              139],
-    ['Zinger Burger',                120],
-    ['Nashville Zinger Burger',      169],
-    ['Mega Zinger Burger',           150],
-    ['Egg Burger',                    70],
-    ['Aloo Tikka Burger',             70],
-    ['Shawarma Burger',              140],
-    ['Chicken + Paneer Veg Burger',  150],
+    ['Veggie Supreme Burger',         99],
+    ['Spicy Paneer Burger',          109],
+    ['Classic Chicken Burger',       119],
+    ['Caribbean Jerk Chicken Burger', 139],
+    ['BBQ Chicken Burger',           149],
+    ['Healthy Egg & Chicken Burger', 159],
+  ]],
+
+  ['Sandwiches', 'sandwich', [
+    ['Tomato Cucumber Cheese Sandwich', 69],
+    ['Egg Mayo Sandwich',               79],
+    ['Paneer Tikka Sandwich',           85],
+    ['Chicken Tikka Sandwich',          89],
+    ['Peri Peri Chicken Sandwich',      89],
   ]],
 
   ['Wraps', 'wrap', [
-    ['Veg Wrap',             80],
-    ['Paneer Wrap',          90],
-    ['Egg Wrap',             90],
-    ['Chicken Wrap',        100],
-    ['Zinger Wrap',         100],
-    ['Veg Nugget Wrap',     110],
-    ['Chicken Nugget Wrap', 120],
-    ['Chicken Strips Wrap', 129],
+    ['Egg Wrap',                      85],
+    ['Veg Nugget Wrap',               89],
+    ['Paneer Khurchan Wrap',          99],
+    ['Chicken Nugget Wrap',           99],
+    ['Spicy Chicken Sausage Wrap',    99],
+    ['Kolkata Style Egg Chicken Wrap', 99],
   ]],
 
-  ['Nuggets & Chicken', 'chicken', [
-    ['Veg Nuggets',                             79],
-    ['Chicken Soucy Nuggets',                  139],
-    ['Chicken Fried Strips',                   149],
-    ['Chicken Fried Wings (4 pcs)',            120],
-    ['Chicken Popcorn',                        119],
-    ['Saucy Pan Tossed Fried Wings (4 pcs)',   149],
-    ['Saucy Pan Tossed Fried Strips (5 pcs)',  169],
+  ['Burrito Bowls', 'burrito', [
+    ['Mexican Chilli Paneer Bowl', 249],
+    ['Mexican Chicken Bowl',       279],
   ]],
 
-  ['Momos / Sandwiches', 'sandwich', [
-    ['Veg Momo',                70],
-    ['Chicken Momo',            80],
-    ['Paneer Momo',             80],
-    ['Veg Sandwich',            60],
-    ['Egg Sandwich',            80],
-    ['Paneer Sandwich',         80],
-    ['Chicken Sandwich',        90],
-    ['Chicken Club',           129],
-    ['Paneer Club',            120],
-    ['Veg Club',                99],
-    ['Saucy Pan Toasted Momos', 99],
+  ['Veg Meals', 'meal', [
+    ['Paneer Butter Masala, Jeera Rice & Lime Onion', 199],
+    ['Paneer Manchurian with Veg Fried Rice',         199],
   ]],
 
-  ['Maggie', 'noodles', [
-    ['Veg Maggie',               40],
-    ['Egg Maggie',               50],
-    ['Chicken Maggie',           90],
-    ['Paneer Maggie',            90],
-    ['Cheese Maggie',            60],
-    ['White Sos Veg Maggie',     65],
-    ['White Sos Chicken Maggie', 70],
-    ['White Sos Al Fredo',       70],
-    ['Chicken Nacho',            79],
+  ['Non-Veg Meals', 'meal', [
+    ['Butter Chicken, Jeera Rice & Lime Onion',     229],
+    ['Chilli Garlic Chicken with Egg Fried Rice',   229],
+  ]],
+
+  ['Rice Specials', 'rice', [
+    ['Egg Fried Rice',             89],
+    ['Schezwan Chicken Fried Rice', 179],
   ]],
 
   ['Pasta', 'pasta', [
-    ['White Sauce Veg Pasta', 89],
-    ['Red Sauce Veg Pasta',   79],
-    ['Chicken Pasta',         99],
-    ['Chicken Alfredo',       89],
-    ['Francisco Predo',      119],
+    ['White Sauce Veg Pasta', 129],
+    ['Red Sauce Veg Pasta',   139],
+    ['Pink Sauce Pasta',      149],
+    ['Add Chicken',            40],
   ]],
 
-  ['Porotta', 'paratha', [
-    ['Boile Egg Porotta',      60],
-    ['Chicken Porotta',        70],
-    ['Chilli Chicken Porotta', 99],
-    ['Francisco Porotta',     109],
-    ['Zinger Porotta',        119],
+  ['Maggi', 'noodles', [
+    ['Veg Maggi',             49],
+    ['Egg Maggi',             59],
+    ['Cheese Maggi',          79],
+    ['Paneer Maggi',          79],
+    ['Chicken Maggi',         89],
+    ['Chicken Sausage Maggi', 89],
   ]],
 
-  ['Pizza', 'pizza', [
-    ['Pizza Veg',              120],
-    ['Pizza Chicken',          149],
-    ['Punjabi Samosa (5 pcs)',  49],
+  ['Momos', 'momos', [
+    ['Veg Momos',     79],
+    ['Paneer Momos',  89],
+    ['Chicken Momos', 99],
+  ]],
+
+  ['Korean Buns', 'bun', [
+    ['Cheese Garlic Bun',  69],
+    ['Chicken Cheese Bun', 89],
+  ]],
+
+  ['Nuggets & Chicken', 'chicken', [
+    ['Veg Nuggets',                  79],
+    ['Chicken Saucy Nuggets',        79],
+    ['Grilled Chicken Sausage (3 pcs)', 99],
+    ['Chicken Fried Strips (3 pcs)', 139],
+    ['Chicken Fried Wings (6 pcs)',  149],
+  ]],
+
+  ['Egg Specials', 'egg', [
+    ['Plain Omelette',                      49],
+    ['Cheese Omelette',                     59],
+    ['Masala Omelette',                     59],
+    ['Bread Omelette',                      59],
+    ['Classic Egg Scramble',                69],
+    ['Chicken Sausage & Cheese Omelette',   79],
   ]],
 
   ['Fries & Sides', 'fries', [
-    ['French Fries Normal',             70],
-    ['French Fries Peri Peri',          80],
-    ['Chicken Loaded Fries',           120],
-    ['Veg Paneer Loaded Fries',        130],
-    ['Korean Sweet Loaded Fries',      149],
-    ['Kogi Kalbi Chilli Loaded Fries', 149],
-    ['Potato Wedges',                   89],
-    ['Nachos',                         120],
+    ['French Fries',          79],
+    ['Peri Peri Fries',       89],
+    ['Loaded Cheese Fries',  129],
+    ['Potato Wedges',        129],
+    ['Chicken Loaded Fries', 159],
   ]],
 
-  ['Fresh Juice', 'juice', [
-    ['Lime Juice',     30],
-    ['Ginger Lime',    35],
-    ['Mint Lime',      35],
-    ['Grape Lime',     40],
-    ['Mosumbi',        50],
-    ['Orange',         50],
-    ['Papaya',         50],
-    ['Watermelon',     50],
-    ['Pineapple',      50],
-    ['Grape',          60],
-    ['Mango',          50],
-    ['Mixed Cocktail', 60],
-    ['Pomegranate',    80],
+  ['Fruit Bowls', 'fruit', [
+    ['Watermelon Bowl',     49],
+    ['Muskmelon Bowl',      49],
+    ['Papaya Bowl',         49],
+    ['Pineapple Bowl',      49],
+    ['Seasonal Fruit Salad', 59],
   ]],
 
-  ['Milk Shake', 'milkshake', [
-    ['Butter Fruit',   89],
-    ['Banana',         70],
-    ['Papaya',         70],
-    ['Guava',          70],
-    ['Chickku',        70],
-    ['Strawberry',     79],
-    ['Carrot',         79],
-    ['Jackfruit',      79],
-    ['Tender Coconut', 79],
-    ['Mango',          79],
+  ['Milkshakes', 'milkshake', [
+    ['Vanilla Milkshake',        79],
+    ['Banana Milkshake',         79],
+    ['Chocolate Milkshake',      79],
+    ['Salted Caramel Milkshake', 89],
+    ['Oreo Milkshake',           89],
+    ['KitKat Milkshake',         89],
+    ['Brownie Milkshake',       109],
   ]],
 
-  ['Ice Cream Shake', 'icecream', [
-    ['Vanilla',       90],
-    ['Strawberry',    90],
-    ['Mango',         90],
-    ['Chocolate',     90],
-    ['Butter Scotch', 90],
-    ['Black Currant', 90],
+  ['Cold Coffee', 'coffee', [
+    ['Cold Coffee',           79],
+    ['Coffee Frappe',         89],
+    ['Salted Caramel Frappe', 119],
   ]],
 
-  ['Dry Fruit Milk Shake', 'milkshake', [
-    ['Kitkat',           79],
-    ['Snickers',         79],
-    ['Dates',            89],
-    ['Sharjah',          89],
-    ['Cold Coffee',      89],
-    ['Kannur Cocktail',  89],
-    ['Abood',            99],
-    ['Casata',          110],
+  ['Fresh Juices', 'juice', [
+    ['Watermelon Juice', 49],
+    ['Pineapple Juice',  49],
+    ['Papaya Juice',     49],
+    ['ABC Juice',        89],
   ]],
 
-  ['Avil Milk', 'milk', [
-    ['Avil Milk Plain',            70],
-    ['Mango Avil Milk',            90],
-    ['Mango Avil Milk Plain',      90],
-    ['Pineapple Avil Milk',       100],
-    ['Butterscotch Avil Milk',    100],
-    ['Tender Coconut Avil Milk',  100],
-    ['Oreo Avil Milk',            110],
-    ['Mixed Dry Fruit Avil Milk', 130],
+  ['Mocktails', 'mocktail', [
+    ['Andhra Special Sarbath', 49],
+    ['Fresh Lime Soda',        49],
+    ['Mojito',                 59],
+    ['Lemon Iced Tea',         59],
+    ['Citrus Blue',            79],
+    ['Watermelon Lemonade',    79],
   ]],
 
-  ['Mojitos', 'mojito', [
-    ['Passion Fruit Mojito', 79],
-    ['Strawberry Mojito',    79],
-    ['Mint Mojito',          79],
-    ['Blue Lagoon Mojito',   79],
-    ['Green Apple Mojito',   79],
-    ['Chilli Guava',         79],
-    ['Ice Tea',              79],
-  ]],
-
-  ['Healthy Juices', 'juice', [
-    ['ABC',      90],
-    ['Carrot',   70],
-    ['Beetroot', 50],
-  ]],
-
-  ['Lassi', 'lassi', [
-    ['Sweet Lassi',       50],
-    ['Mango Lassi',       60],
-    ['Banana Lassi',      60],
-    ['Apple Lassi',       60],
-    ['Pomegranate Lassi', 80],
-  ]],
-
-  ['Soda Special', 'soda', [
-    ['Lime Soda',      40],
-    ['Masala Soda',    40],
-    ['Mint Lime Soda', 40],
-    ['Pineapple Soda', 40],
-    ['Nannari Soda',   45],
-    ['Kom Kom Soda',   45],
-  ]],
-
-  ['Falooda', 'dessert', [
-    ['Fruit Salad',                 99],
-    ['Fruit Salad with Ice Cream', 110],
-    ['Royal Falooda',              120],
-    ['Normal Falooda',             130],
-    ['Tender Coconut SP Falooda',  120],
-  ]],
-
-  ['Special Sarbath', 'drink', [
-    ['Nannari Sarbath',      40],
-    ['Lemon Kuluki',         70],
-    ['Boost Kuluki',         80],
-    ['Grape Fruit Kuluki',   80],
-    ['Passion Fruit Kuluki', 80],
+  ['Tea & Coffee', 'tea', [
+    ['Tea',                15],
+    ['Ginger Tea',         20],
+    ['Milk',               20],
+    ['Honey Lemon Tea',    25],
+    ['Regular Coffee',     25],
+    ['Green Tea',          30],
+    ['Filter Coffee',      30],
+    ['Hot Chocolate',      49],
+    ['Add Boost / Horlicks', 5],
   ]],
 ];
 

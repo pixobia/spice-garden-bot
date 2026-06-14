@@ -74,17 +74,22 @@ async function main() {
     logger.info(`Mini App  : ${config.PUBLIC_URL}/miniapp/`);
   });
 
+  // NOTE: the chat menu button (the button next to the message box) is managed
+  // via BotFather, not here. We deliberately do NOT call setChatMenuButton —
+  // doing so overrides BotFather's setting on every startup, which previously
+  // stopped the BotFather-configured button from ever showing.
+
+  // Register the slash-command suggestions shown when a user taps the "/" button
+  // or the command menu, so they don't have to know any command exists.
   try {
-    await bot.telegram.setChatMenuButton({
-      menu_button: {
-        type: 'web_app',
-        text: 'Order',
-        web_app: { url: `${config.PUBLIC_URL}/miniapp/` },
-      },
-    });
-    logger.info(`Menu button set → ${config.PUBLIC_URL}/miniapp/`);
+    await bot.telegram.setMyCommands([
+      { command: 'start', description: 'Start / restart the bot' },
+      { command: 'menu', description: 'Browse the menu and order' },
+      { command: 'help', description: 'How to use this bot' },
+    ]);
+    logger.info('Bot commands registered (/start, /menu, /help)');
   } catch (err) {
-    logger.error({ err }, 'Failed to set menu button');
+    logger.error({ err }, 'Failed to set bot commands');
   }
 
   // 4. Start the bot.
