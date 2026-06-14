@@ -48,7 +48,7 @@ export async function notifyAdminNewOrder(order) {
     ...itemLines,
     "",
     `Subtotal: ${fmtINR(order.subtotal)}`,
-    `Delivery: ${order.deliveryFee === 0 ? 'Free' : fmtINR(order.deliveryFee)}`,
+    `Delivery & Parcel: ${order.deliveryFee === 0 ? 'Free' : fmtINR(order.deliveryFee)}`,
     `Total:    ${fmtINR(order.total)}`,
     "",
     `UPI ref: Order-${order.id}`,
